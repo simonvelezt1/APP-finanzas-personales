@@ -247,6 +247,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card">
       <div class="ig"><div class="seg"><button class="sb active" id="tg" onclick="selT('gasto')">Gasto</button><button class="sb" id="ti" onclick="selT('ingreso')">Ingreso</button></div></div>
       <div class="ig"><label class="il">CARTERA</label><div class="seg"><button class="sb active" id="wc" onclick="selW('COP')">COP</button><button class="sb" id="wu" onclick="selW('USD')">USD</button></div></div>
+      <div class="ig" id="ctaSec" style="display:none;"><label class="il">CUENTA QUE RECIBE EL INGRESO</label><select class="sel-inp" id="ctaSel" onchange="onCtaSelChange()"><option value="">Sin cuenta específica</option></select></div>
       <div id="catSec" class="ig"><label class="il">CATEGORÍA</label><div class="cg" id="cgrid"></div></div>
       <div class="ig"><label class="il">MONTO</label><input class="inp" type="number" id="monto" placeholder="0" inputmode="decimal"/></div>
       <div class="ig"><label class="il">DESCRIPCIÓN (opcional)</label><input class="inp" type="text" id="mdesc" placeholder="Ej: almuerzo de trabajo"/></div>
