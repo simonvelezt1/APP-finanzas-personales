@@ -542,6 +542,7 @@ function renderDash(){
   const now=new Date(),m=now.getMonth(),y=now.getFullYear();
   const pat=calcPat();
   setText('h-tot',fCOP(pat.total));
+  setText('h-cash',fCOP(pat.ctasCOP));
   setText('h-ctas','Cuentas '+fCOP(pat.ctasCOP));
   setText('h-invp','Inversiones '+fCOP(pat.invCOP));
   const pc=$e('h-pat-card');
