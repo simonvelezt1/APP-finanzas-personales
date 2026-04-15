@@ -547,7 +547,7 @@ function expXL(){if(typeof XLSX==='undefined'){toast('Librería no disponible');
 function resetApp(){if(confirm('¿Seguro? Todos los datos se eliminarán.')){S.txs=[];S.invs=[];S.ctas=[];S.bud={general:0,COP:{},USD:{}};S.cats=[...DC];persist();toast('Datos eliminados');renderAll();}}
 function renderAll(){renderDash();renderCG();renderHist();renderBProg();renderInv();renderCuentas();renderCatEdit();updTRM();const ml=$e('mlB');if(ml)ml.textContent=MESES[S.bm]+' '+S.by;}
 const mf=$e('mfecha');if(mf)mf.value=new Date().toISOString().split('T')[0];
-load();renderAll();autoTRM();
+load();genIcon();selT(S.tipo);renderAll();autoTRM();
 </script>
 </body>
 </html>
