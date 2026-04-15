@@ -183,7 +183,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span class="h-pill" id="h-invp" onclick="event.stopPropagation();go('invers',navBtn('invers'))">Inversiones $0</span>
       </div>
     </div>
-    <div class="mc card-click" id="h-cash-card" onclick="go('cuentas',navBtn('cuentas'))" style="margin-bottom:10px;cursor:pointer;">
+    <div class="mc card-click" id="h-cash-card" onclick="go('cuentas',navBtn('cuentas'))" style="margin-bottom:10px;cursor:pointer;position:relative;">
+      <button class="priv-btn" id="priv-cash-btn" onclick="event.stopPropagation();togglePriv('cash',event)">👁️</button>
       <div class="mc-l">EFECTIVO EN CUENTAS</div>
       <div class="mc-v tgreen" id="h-cash">$0</div>
       <div class="mc-s">suma de todas las cuentas</div>
