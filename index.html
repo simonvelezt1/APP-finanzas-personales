@@ -633,7 +633,7 @@ function renderDash(){
       const topCat=S.cats.find(c=>c.id===topId)||{n:'Otros',i:'📦'};
       const topAmt=byCat[topId];const topPct=gMcop>0?Math.round(topAmt/gMcop*100):0;
       const ce=$e('h-topcat-content');
-      if(ce)ce.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-top:6px;"><div style="font-size:24px;">${topCat.i}</div><div><div style="font-size:14px;font-weight:600;color:var(--text-primary);">${topCat.n}</div><div style="font-size:12px;color:var(--text-secondary);">${fCOP(topAmt)} · ${topPct}% del total</div></div></div>`;
+      if(ce)ce.innerHTML=isHid('topcat')?`<div style="font-size:20px;letter-spacing:3px;color:var(--text-muted);margin-top:6px;">••••</div>`:`<div style="display:flex;align-items:center;gap:10px;margin-top:6px;"><div style="font-size:24px;">${topCat.i}</div><div><div style="font-size:14px;font-weight:600;color:var(--text-primary);">${topCat.n}</div><div style="font-size:12px;color:var(--text-secondary);">${fCOP(topAmt)} · ${topPct}% del total</div></div></div>`;
     }else{topCard.style.display='none';}
   }
   const gb=$e('h-genbud');
