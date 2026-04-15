@@ -372,6 +372,88 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+// ── Supabase sync ────────────────────────────────────────────────
+const SUPA_URL='https://ukqruxdknpaljxndyswl.supabase.co';
+const SUPA_KEY='sb_publishable_8n5K25ZY4xZWX3bTprZ81w_3H2_-1Tp';
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+let supaUser=null;
+let _syncTimer=null;
+
+function setSyncDot(state){
+  const d=$e('sync-dot');if(!d)return;
+  d.style.background=state==='ok'?'var(--bar-green)':state==='busy'?'var(--bar-amber)':'var(--text-muted)';
+  d.title=state==='ok'?'Sincronizado':state==='busy'?'Sincronizando…':'Sin sesión';
+}
+
+async function syncUp(){
+  if(!supaUser)return;
+  setSyncDot('busy');
+  try{
+    const data={txs:S.txs,ctas:S.ctas,invs:S.invs,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate};
+    const{error}=await supa.from('finanzas_data').upsert({user_id:supaUser.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    setSyncDot(error?'err':'ok');
+  }catch(e){setSyncDot('err');}
+}
+
+async function syncDown(){
+  if(!supaUser)return;
+  setSyncDot('busy');
+  try{
+    const{data:row,error}=await supa.from('finanzas_data').select('data').eq('user_id',supaUser.id).single();
+    if(row?.data){
+      const d=row.data;
+      S.txs=d.txs||[];S.ctas=d.ctas||[];S.invs=d.invs||[];
+      S.cats=d.cats?.length?d.cats:[...DC];
+      S.bud=d.bud||{general:0,COP:{},USD:{}};
+      if(d.trm>100){S.trm=d.trm;S.trmMan=!!d.trmMan;S.trmDate=d.trmDate||'';}
+      S.txs.forEach(t=>{if(t.ctaId===undefined)t.ctaId=null;});
+      localStorage.setItem('mf_v1',JSON.stringify({txs:S.txs,invs:S.invs,ctas:S.ctas,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate}));
+      renderAll();
+    }
+    setSyncDot('ok');
+  }catch(e){setSyncDot('err');}
+}
+
+function debouncedSyncUp(){
+  if(_syncTimer)clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(syncUp,1500);
+}
+
+async function sendMagicLink(){
+  const email=($e('login-email')?.value||'').trim();
+  if(!email){toast('Ingresa tu email');return;}
+  const{error}=await supa.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href}});
+  if(error){toast('Error: '+error.message);return;}
+  const sent=$e('login-sent');if(sent)sent.style.display='block';
+  toast('Link enviado ✓');
+}
+
+async function doSignOut(){
+  await supa.auth.signOut();
+  supaUser=null;
+  setSyncDot('off');
+  setText('aj-email','—');
+  showLogin();
+  toast('Sesión cerrada');
+}
+
+function showLogin(){const lo=$e('login-overlay');if(lo)lo.style.display='flex';}
+function hideLogin(){const lo=$e('login-overlay');if(lo)lo.style.display='none';}
+
+supa.auth.onAuthStateChange((event,session)=>{
+  supaUser=session?.user||null;
+  if(supaUser){
+    hideLogin();
+    setText('aj-email',supaUser.email||'—');
+    setSyncDot('busy');
+    syncDown();
+  }else{
+    setSyncDot('off');
+    showLogin();
+  }
+});
+// ─────────────────────────────────────────────────────────────────
+
 // Generate 180×180 PWA icon via canvas and inject into <link> + logo
 function genIcon(){
   try{
