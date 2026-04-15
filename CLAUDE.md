@@ -24,10 +24,7 @@ Any edit to `index.html` auto-commits and pushes to GitHub via a PostToolUse hoo
 | `vercel.json` | ✅ manual push | | Deployment config |
 | `CLAUDE.md` | ✅ manual push | | Architecture docs |
 | `.gitignore` | ✅ manual push | | Protects local files |
-| `.claude/settings.json` | ✅ manual push | | PostToolUse hook (needed for auto-commit to work) |
-| `.claude/launch.json` | ✅ manual push | | Local dev server config |
-| `.claude/settings.local.json` | 🚫 never | ✅ | Personal permissions — gitignored |
-| `.claude/plans/` | 🚫 never | ✅ | Work-in-progress plans — gitignored |
+| `.claude/` (toda la carpeta) | 🚫 never | ✅ | Configuración de Claude — gitignored completa |
 | `*.png / *.jpg` | 🚫 never | ✅ | Personal images — gitignored |
 
 **Rule:** Never use `git add .` or `git add -A` — always add files by name to avoid accidentally pushing personal files.

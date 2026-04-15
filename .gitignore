@@ -1,6 +1,5 @@
-# Configuración local de Claude — permisos personales y planes de trabajo
-.claude/settings.local.json
-.claude/plans/
+# Toda la configuración de Claude se mantiene solo en el PC
+.claude/
 
 # Archivos personales del PC
 *.png
