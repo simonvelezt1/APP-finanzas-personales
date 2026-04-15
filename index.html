@@ -591,9 +591,9 @@ function renderDash(){
       const rows=$e('h-pat-rows');
       if(rows){
         let html='';
-        if(copT>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Cuentas COP</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${fCOP(copT)}</span></div>`;
-        if(usdT>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Cuentas USD×TRM</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${fCOP(usdT*S.trm)}</span></div>`;
-        if(pat.invCOP>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Inversiones</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${fCOP(pat.invCOP)}</span></div>`;
+        if(copT>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Cuentas COP</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(copT))}</span></div>`;
+        if(usdT>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Cuentas USD×TRM</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(usdT*S.trm))}</span></div>`;
+        if(pat.invCOP>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Inversiones</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(pat.invCOP))}</span></div>`;
         rows.innerHTML=html;
       }
       setText('h-pat-tot',fCOP(pat.total));
