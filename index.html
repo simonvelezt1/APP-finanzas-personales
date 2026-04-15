@@ -569,10 +569,10 @@ function genBudHTML(spent,gen,m,y){const pct=Math.min(Math.round(spent/gen*100),
 function renderDash(){
   const now=new Date(),m=now.getMonth(),y=now.getFullYear();
   const pat=calcPat();
-  setText('h-tot',fCOP(pat.total));
-  setText('h-cash',fCOP(pat.ctasCOP));
-  setText('h-ctas','Cuentas '+fCOP(pat.ctasCOP));
-  setText('h-invp','Inversiones '+fCOP(pat.invCOP));
+  setText('h-tot',pv('tot',fCOP(pat.total)));
+  setText('h-cash',pv('cash',fCOP(pat.ctasCOP)));
+  setText('h-ctas','Cuentas '+(isHid('tot')?'••••':fCOP(pat.ctasCOP)));
+  setText('h-invp','Inversiones '+(isHid('tot')?'••••':fCOP(pat.invCOP)));
   const pc=$e('h-pat-card');
   if(pc){
     if(pat.total>0){
