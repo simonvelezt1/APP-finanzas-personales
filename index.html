@@ -597,9 +597,9 @@ function renderDash(){
   const iMcop=S.txs.filter(t=>t.tipo==='ingreso'&&sM(t.fecha,m,y)).reduce((a,t)=>a+toCOP(t.monto,t.wal),0);
   // Balance Neto = Patrimonio (cuentas + inversiones) − Gastos del mes
   const bal=pat.total-gMcop;
-  setText('h-gm',fCOP(gMcop));
+  setText('h-gm',pv('gm',fCOP(gMcop)));
   setText('h-gtx',gM.length+' movimientos');
-  setText('h-bal',(bal>=0?'+':'')+fCOP(bal));
+  setText('h-bal',pv('bal',(bal>=0?'+':'')+fCOP(bal)));
   setStyle('h-bal','color',bal>=0?'var(--green)':'var(--red)');
   setText('h-bal-sub','patrimonio − gastos del mes');
   // Tasa de ahorro mensual
