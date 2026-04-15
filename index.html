@@ -51,7 +51,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nb.active{color:var(--text-primary);border-bottom-color:var(--text-primary);font-weight:500;}
 .pg{display:none;padding:14px;}
 .pg.active{display:block;}
-.hero{background:var(--bg-secondary);border-radius:var(--radius-xl);padding:18px;margin-bottom:12px;}
+.hero{background:var(--bg-secondary);border-radius:var(--radius-xl);padding:18px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,.06);transition:opacity .12s;}
+.hero:active{opacity:.75;}
 .h-lbl{font-size:10px;color:var(--text-secondary);letter-spacing:.08em;margin-bottom:4px;}
 .h-amt{font-size:28px;font-weight:600;color:var(--text-primary);letter-spacing:-.5px;margin-bottom:10px;}
 .h-pills{display:flex;gap:6px;flex-wrap:wrap;}
