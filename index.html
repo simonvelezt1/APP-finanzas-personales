@@ -202,7 +202,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mc" onclick="go('movim',navBtn('movim'))" style="position:relative;"><button class="priv-btn" id="priv-gm-btn" onclick="event.stopPropagation();togglePriv('gm',event)">👁️</button><div class="mc-l">GASTOS ESTE MES</div><div class="mc-v" id="h-gm">$0</div><div class="mc-s" id="h-gtx">0 mov.</div></div>
       <div class="mc" onclick="go('cuentas',navBtn('cuentas'))" style="position:relative;"><button class="priv-btn" id="priv-bal-btn" onclick="event.stopPropagation();togglePriv('bal',event)">👁️</button><div class="mc-l">BALANCE NETO</div><div class="mc-v" id="h-bal">$0</div><div class="mc-s" id="h-bal-sub">patrimonio − gastos del mes</div></div>
     </div>
-    <div class="card card-click" id="h-saving-card" style="display:none;margin-bottom:10px;" onclick="go('movim',navBtn('movim'))">
+    <div class="card card-click" id="h-saving-card" style="display:none;margin-bottom:10px;position:relative;" onclick="go('movim',navBtn('movim'))">
+      <button class="priv-btn" id="priv-sav-btn" onclick="event.stopPropagation();togglePriv('sav',event)">👁️</button>
       <div class="mc-l">TASA DE AHORRO MENSUAL</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin:4px 0 2px;">
         <div style="font-size:24px;font-weight:600;" id="h-saving-rate">—</div>
