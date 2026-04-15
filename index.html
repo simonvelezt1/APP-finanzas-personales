@@ -364,6 +364,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn sec" style="margin-bottom:8px;" onclick="syncDown().then(()=>toast('Datos sincronizados ✓'))">Sincronizar ahora</button>
       <button class="btn danger" onclick="doSignOut()">Cerrar sesión</button>
     </div>
+    <div class="stitle">PRIVACIDAD</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Ocultar todos los valores</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Reemplaza montos con •••• en Inicio</div>
+        </div>
+        <button id="priv-global-btn" onclick="togglePriv('global',event)" style="background:none;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;font-size:28px;line-height:1;opacity:0.4;" title="Ocultar todos los valores">👁️</button>
+      </div>
+    </div>
     <div class="stitle">DATOS</div>
     <div class="card">
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Elimina todos los datos. Exporta antes si necesitas backup.</p>
