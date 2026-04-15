@@ -458,15 +458,37 @@ function renderDash(){
   const gM=S.txs.filter(t=>t.tipo==='gasto'&&sM(t.fecha,m,y));
   const gMcop=gM.reduce((a,t)=>a+toCOP(t.monto,t.wal),0);
   const iMcop=S.txs.filter(t=>t.tipo==='ingreso'&&sM(t.fecha,m,y)).reduce((a,t)=>a+toCOP(t.monto,t.wal),0);
-  // FIX: Balance Neto = total en cuentas (COP equiv.) + ingresos del mes − gastos del mes
-  const ctasTotalCOP=S.ctas.reduce((a,c)=>a+toCOP(c.saldo,c.wal),0);
-  const bal=S.ctas.length>0?ctasTotalCOP+iMcop-gMcop:iMcop-gMcop;
+  // Balance Neto = Patrimonio (cuentas + inversiones) − Gastos del mes
+  const bal=pat.total-gMcop;
   setText('h-gm',fCOP(gMcop));
   setText('h-gtx',gM.length+' movimientos');
   setText('h-bal',(bal>=0?'+':'')+fCOP(bal));
   setStyle('h-bal','color',bal>=0?'var(--green)':'var(--red)');
-  // Dynamic subtitle explains the formula in use
-  setText('h-bal-sub',S.ctas.length>0?'cuentas + flujo mensual':'ingresos − gastos');
+  setText('h-bal-sub','patrimonio − gastos del mes');
+  // Tasa de ahorro mensual
+  const savCard=$e('h-saving-card');
+  if(savCard){
+    if(iMcop>0){
+      savCard.style.display='block';
+      const rate=(iMcop-gMcop)/iMcop*100;
+      const rEl=$e('h-saving-rate'),sEl=$e('h-saving-sub');
+      if(rEl){rEl.textContent=rate.toFixed(1)+'%';rEl.style.color=rate>=20?'var(--green)':rate>=10?'var(--amber)':'var(--red)';}
+      if(sEl)sEl.textContent=rate>=20?'Excelente 🎯':rate>=10?'Mejorable':'Bajo ⚠️';
+    }else{savCard.style.display='none';}
+  }
+  // Top categoría del mes
+  const topCard=$e('h-topcat-card');
+  if(topCard){
+    if(gM.length>0){
+      topCard.style.display='block';
+      const byCat={};gM.forEach(t=>{const k=t.cat||'otros';byCat[k]=(byCat[k]||0)+toCOP(t.monto,t.wal);});
+      const topId=Object.keys(byCat).reduce((a,b)=>byCat[a]>byCat[b]?a:b);
+      const topCat=S.cats.find(c=>c.id===topId)||{n:'Otros',i:'📦'};
+      const topAmt=byCat[topId];const topPct=gMcop>0?Math.round(topAmt/gMcop*100):0;
+      const ce=$e('h-topcat-content');
+      if(ce)ce.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-top:6px;"><div style="font-size:24px;">${topCat.i}</div><div><div style="font-size:14px;font-weight:600;color:var(--text-primary);">${topCat.n}</div><div style="font-size:12px;color:var(--text-secondary);">${fCOP(topAmt)} · ${topPct}% del total</div></div></div>`;
+    }else{topCard.style.display='none';}
+  }
   const gb=$e('h-genbud');
   if(gb)gb.innerHTML=S.bud.general>0?genBudHTML(gMcop,S.bud.general,m,y):'';
   const days=[];
