@@ -14,7 +14,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Any edit to `index.html` auto-commits and pushes to GitHub via a PostToolUse hook (`.claude/settings.json`). Vercel and GitHub Pages both auto-deploy on push. `vercel.json` sets `Cache-Control: no-cache` on the HTML so browsers always fetch the latest version.
 
-**Sync rule:** GitHub, Vercel and Supabase must always be in sync. `index.html` edits auto-push. Changes to other files (e.g. `vercel.json`) must be committed and pushed manually via `git add <file> && git commit && git push`.
+**Sync rule:** GitHub, Vercel and Supabase must always be in sync. `index.html` edits auto-push via the PostToolUse hook. Changes to other **tracked** files (e.g. `vercel.json`, `CLAUDE.md`) must be committed and pushed manually: `git add <file> && git commit && git push`.
+
+## What lives where
+
+| File | GitHub | PC only | Why |
+|---|---|---|---|
+| `index.html` | ✅ auto-push | | The app |
+| `vercel.json` | ✅ manual push | | Deployment config |
+| `CLAUDE.md` | ✅ manual push | | Architecture docs |
+| `.gitignore` | ✅ manual push | | Protects local files |
+| `.claude/settings.json` | ✅ manual push | | PostToolUse hook (needed for auto-commit to work) |
+| `.claude/launch.json` | ✅ manual push | | Local dev server config |
+| `.claude/settings.local.json` | 🚫 never | ✅ | Personal permissions — gitignored |
+| `.claude/plans/` | 🚫 never | ✅ | Work-in-progress plans — gitignored |
+| `*.png / *.jpg` | 🚫 never | ✅ | Personal images — gitignored |
+
+**Rule:** Never use `git add .` or `git add -A` — always add files by name to avoid accidentally pushing personal files.
 
 ## Architecture
 
