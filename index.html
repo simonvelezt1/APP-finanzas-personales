@@ -258,6 +258,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mrow-t">HISTORIAL</div>
       <div class="mnav"><button class="mbtn" onclick="chM(-1)">‹</button><span class="mlbl" id="mlM">—</span><button class="mbtn" onclick="chM(1)">›</button></div>
     </div>
+    <div class="ig" style="margin-bottom:8px;"><input class="inp" type="search" id="txSearch" placeholder="Buscar por descripción o categoría..." oninput="renderHist()" style="font-size:13px;padding:9px 12px;"/></div>
     <div class="frow">
       <select class="fsel" id="fw" onchange="renderHist()"><option value="">Carteras</option><option value="COP">COP</option><option value="USD">USD</option></select>
       <select class="fsel" id="fc" onchange="renderHist()"></select>
