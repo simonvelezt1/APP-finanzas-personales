@@ -150,10 +150,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span class="app-name">Mis Finanzas</span>
       <span id="sync-dot" title="Estado sync" style="width:7px;height:7px;border-radius:50%;background:var(--text-muted);display:inline-block;margin-left:2px;flex-shrink:0;"></span>
     </div>
-    <button class="trm-chip" onclick="toggleTRM()">
-      <span class="trm-dot" id="tDot"></span>
-      <span class="trm-chip-val" id="tVal">TRM —</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <button class="priv-global" id="priv-global-btn" onclick="togglePriv('global',event)" title="Ocultar/mostrar valores">👁️</button>
+      <button class="trm-chip" onclick="toggleTRM()">
+        <span class="trm-dot" id="tDot"></span>
+        <span class="trm-chip-val" id="tVal">TRM —</span>
+      </button>
+    </div>
   </div>
   <div class="trm-edit-row" id="trmRow">
     <span class="trm-lbl">1 USD =</span>
