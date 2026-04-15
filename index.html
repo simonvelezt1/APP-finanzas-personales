@@ -362,6 +362,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div id="edit-tx-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center;" onclick="closeEditModal()">
+  <div style="background:var(--bg-primary);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(36px + env(safe-area-inset-bottom));" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <span style="font-size:16px;font-weight:600;color:var(--text-primary);">Editar movimiento</span>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:24px;color:var(--text-secondary);cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div id="edit-tx-body"></div>
+    <button class="btn" style="margin-top:12px;" onclick="saveEditTx()">Guardar cambios</button>
+  </div>
+</div>
 <div id="login-overlay" style="display:none;position:fixed;inset:0;background:var(--bg-tertiary);z-index:1000;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;">
   <div style="font-size:52px;margin-bottom:16px;">💚</div>
   <div style="font-size:22px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Mis Finanzas</div>
