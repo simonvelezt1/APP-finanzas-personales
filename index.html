@@ -412,7 +412,7 @@ let _toastTimer=null;
 function toast(msg){const t=$e('toast');if(!t)return;if(_toastTimer)clearTimeout(_toastTimer);t.textContent=msg;t.classList.add('on');_toastTimer=setTimeout(()=>t.classList.remove('on'),2200);}
 
 function selW(w){S.wal=w;$e('wc').classList.toggle('active',w==='COP');$e('wu').classList.toggle('active',w==='USD');}
-function selT(t){S.tipo=t;$e('tg').classList.toggle('active',t==='gasto');$e('ti').classList.toggle('active',t==='ingreso');const cs=$e('catSec');if(cs)cs.style.display=t==='gasto'?'':'none';if(t==='ingreso'){S.cat=null;renderCG();}}
+function selT(t){S.tipo=t;$e('tg').classList.toggle('active',t==='gasto');$e('ti').classList.toggle('active',t==='ingreso');const cs=$e('catSec');if(cs)cs.style.display=t==='gasto'?'':'none';const ctaSec=$e('ctaSec');if(ctaSec)ctaSec.style.display=t==='ingreso'?'':'none';if(t==='ingreso'){S.cat=null;renderCG();populateCtaSel();}}
 function selBW(w){S.bWal=w;$e('bwc').classList.toggle('active',w==='COP');$e('bwu').classList.toggle('active',w==='USD');renderBCfg();}
 function selIW(w){S.iWal=w;$e('iwc').classList.toggle('active',w==='COP');$e('iwu').classList.toggle('active',w==='USD');}
 function selCW(w){S.cWal=w;$e('cw-cop').classList.toggle('active',w==='COP');$e('cw-usd').classList.toggle('active',w==='USD');}
