@@ -174,7 +174,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </nav>
 
   <div id="pg-inicio" class="pg active">
-    <div class="hero" onclick="go('cuentas',navBtn('cuentas'))">
+    <div class="hero" onclick="go('cuentas',navBtn('cuentas'))" style="position:relative;">
+      <button class="priv-btn" id="priv-tot-btn" onclick="event.stopPropagation();togglePriv('tot',event)">👁️</button>
       <div class="h-lbl">TOTAL DE ACTIVOS EN COP</div>
       <div class="h-amt" id="h-tot">$0</div>
       <div class="h-pills">
