@@ -342,6 +342,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Genera un Excel con 5 hojas: cuentas, transacciones, presupuesto, inversiones y resumen.</p>
       <button class="btn" onclick="expXL()">Exportar a Excel (.xlsx)</button>
     </div>
+    <div class="stitle">CUENTA</div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Sesión activa</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:12px;" id="aj-email">—</div>
+      <button class="btn sec" style="margin-bottom:8px;" onclick="syncDown().then(()=>toast('Datos sincronizados ✓'))">Sincronizar ahora</button>
+      <button class="btn danger" onclick="doSignOut()">Cerrar sesión</button>
+    </div>
     <div class="stitle">DATOS</div>
     <div class="card">
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Elimina todos los datos. Exporta antes si necesitas backup.</p>
