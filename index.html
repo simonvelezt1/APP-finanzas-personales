@@ -609,8 +609,8 @@ function renderDash(){
       savCard.style.display='block';
       const rate=(iMcop-gMcop)/iMcop*100;
       const rEl=$e('h-saving-rate'),sEl=$e('h-saving-sub');
-      if(rEl){rEl.textContent=rate.toFixed(1)+'%';rEl.style.color=rate>=20?'var(--green)':rate>=10?'var(--amber)':'var(--red)';}
-      if(sEl)sEl.textContent=rate>=20?'Excelente 🎯':rate>=10?'Mejorable':'Bajo ⚠️';
+      if(rEl){rEl.textContent=pv('sav',rate.toFixed(1)+'%');rEl.style.color=rate>=20?'var(--green)':rate>=10?'var(--amber)':'var(--red)';}
+      if(sEl)sEl.textContent=isHid('sav')?'':rate>=20?'Excelente 🎯':rate>=10?'Mejorable':'Bajo ⚠️';
     }else{savCard.style.display='none';}
   }
   // Top categoría del mes
