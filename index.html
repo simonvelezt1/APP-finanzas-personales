@@ -596,7 +596,7 @@ function renderDash(){
         if(pat.invCOP>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Inversiones</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(pat.invCOP))}</span></div>`;
         rows.innerHTML=html;
       }
-      setText('h-pat-tot',fCOP(pat.total));
+      setText('h-pat-tot',pv('tot',fCOP(pat.total)));
     }else{
       pc.style.display='none';
     }
