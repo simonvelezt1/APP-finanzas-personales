@@ -211,7 +211,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="mc-s">(ingresos − gastos) / ingresos</div>
     </div>
-    <div class="card card-click" id="h-topcat-card" style="display:none;margin-bottom:10px;" onclick="go('movim',navBtn('movim'))">
+    <div class="card card-click" id="h-topcat-card" style="display:none;margin-bottom:10px;position:relative;" onclick="go('movim',navBtn('movim'))">
+      <button class="priv-btn" id="priv-topcat-btn" onclick="event.stopPropagation();togglePriv('topcat',event)">👁️</button>
       <div class="mc-l">TOP CATEGORÍA DEL MES</div>
       <div id="h-topcat-content"></div>
     </div>
