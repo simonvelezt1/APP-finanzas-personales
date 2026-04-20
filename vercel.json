@@ -1,8 +1,7 @@
 {
   "functions": {
-    "api/polymarket.js": {
-      "regions": ["fra1"]
-    }
+    "api/polymarket.js":     { "regions": ["fra1"] },
+    "api/wallet-balance.js": { "regions": ["fra1"] }
   },
   "headers": [
     {
