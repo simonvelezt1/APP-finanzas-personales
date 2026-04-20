@@ -463,7 +463,7 @@ async function syncDown(){
       S.cats=d.cats?.length?d.cats:[...DC];
       S.bud=d.bud||{general:0,COP:{},USD:{}};
       if(d.trm>100){S.trm=d.trm;S.trmMan=!!d.trmMan;S.trmDate=d.trmDate||'';}
-      S.privGlobal=d.privGlobal||false;S.priv=d.priv||{};S.polyWallet=d.polyWallet||'';S.cryptoWallet=d.cryptoWallet||'';S.cryptoChains=d.cryptoChains||['eth','polygon'];
+      S.privGlobal=d.privGlobal||false;S.priv=d.priv||{};S.polyWallet=d.polyWallet||'';S.cryptoWallet=d.cryptoWallet||'';S.cryptoChains=d.cryptoChains||['eth','polygon'];S.btcAddress=d.btcAddress||'';S.solAddress=d.solAddress||'';
       S.txs.forEach(t=>{if(t.ctaId===undefined)t.ctaId=null;});
       localStorage.setItem('mf_v1',JSON.stringify({txs:S.txs,invs:S.invs,ctas:S.ctas,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:S.privGlobal,priv:S.priv,polyWallet:S.polyWallet,cryptoWallet:S.cryptoWallet,cryptoChains:S.cryptoChains}));
       renderAll();
