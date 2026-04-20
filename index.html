@@ -364,6 +364,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn sec" style="margin-bottom:8px;" onclick="syncDown().then(()=>toast('Datos sincronizados ✓'))">Sincronizar ahora</button>
       <button class="btn danger" onclick="doSignOut()">Cerrar sesión</button>
     </div>
+    <div class="stitle">CRYPTO WALLET</div>
+    <div class="card">
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:6px;">WALLET ADDRESS</div>
+      <input class="inp" type="text" id="cryptoWalletInput" placeholder="0x..." style="font-size:12px;font-family:monospace;letter-spacing:.02em;" oninput="this.value=this.value.trim()"/>
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin:12px 0 8px;">REDES</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-eth"       value="eth"       style="accent-color:var(--green);"> Ethereum</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-polygon"   value="polygon"   style="accent-color:var(--green);"> Polygon</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-bsc"       value="bsc"       style="accent-color:var(--green);"> BNB Chain</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-base"      value="base"      style="accent-color:var(--green);"> Base</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-avalanche" value="avalanche" style="accent-color:var(--green);"> Avalanche</label>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">Solo lectura — muestra tus tokens en Inversiones. La API key de Moralis queda en el servidor, nunca en el HTML.</div>
+      <button class="btn sec" onclick="saveCryptoWallet()">Guardar wallet</button>
+    </div>
     <div class="stitle">POLYMARKET</div>
     <div class="card">
       <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:6px;">TU WALLET ADDRESS</div>
