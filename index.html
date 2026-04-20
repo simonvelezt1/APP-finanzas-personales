@@ -363,6 +363,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn sec" style="margin-bottom:8px;" onclick="syncDown().then(()=>toast('Datos sincronizados ✓'))">Sincronizar ahora</button>
       <button class="btn danger" onclick="doSignOut()">Cerrar sesión</button>
     </div>
+    <div class="stitle">POLYMARKET</div>
+    <div class="card">
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:6px;">TU WALLET ADDRESS</div>
+      <input class="inp" type="text" id="polyWalletInput" placeholder="0x..." style="font-size:12px;font-family:monospace;letter-spacing:.02em;" oninput="this.value=this.value.trim()"/>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.4;">Dirección de tu wallet en Polygon. Solo se usa para leer tus posiciones — no se puede operar desde la app.</div>
+      <button class="btn sec" style="margin-top:10px;" onclick="savePolyWallet()">Guardar wallet</button>
+    </div>
     <div class="stitle">PRIVACIDAD</div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
