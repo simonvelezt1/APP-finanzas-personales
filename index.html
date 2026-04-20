@@ -364,24 +364,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn sec" style="margin-bottom:8px;" onclick="syncDown().then(()=>toast('Datos sincronizados ✓'))">Sincronizar ahora</button>
       <button class="btn danger" onclick="doSignOut()">Cerrar sesión</button>
     </div>
-    <div class="stitle">CRYPTO WALLET</div>
+    <div class="stitle">CRYPTO WALLETS</div>
+    <div class="card" id="walletList"><div class="empty" style="padding:14px 0;">Sin wallets añadidas</div></div>
     <div class="card">
-      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:6px;">METAMASK / EVM (Ethereum, Polygon…)</div>
-      <input class="inp" type="text" id="cryptoWalletInput" placeholder="0x..." style="font-size:12px;font-family:monospace;letter-spacing:.02em;" oninput="this.value=this.value.trim()"/>
-      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin:10px 0 6px;">REDES EVM</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-eth"       style="accent-color:var(--green);"> Ethereum</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-polygon"   style="accent-color:var(--green);"> Polygon</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-bsc"       style="accent-color:var(--green);"> BNB Chain</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-base"      style="accent-color:var(--green);"> Base</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="chain-avalanche" style="accent-color:var(--green);"> Avalanche</label>
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:8px;">AÑADIR WALLET</div>
+      <div class="ig"><label class="il">NOMBRE</label><input class="inp" type="text" id="wLabel" placeholder="Ej: MetaMask, Coinbase…"/></div>
+      <div class="ig"><label class="il">TIPO</label>
+        <select id="wType" onchange="toggleWType()" style="width:100%;padding:10px 12px;font-size:13px;border:0.5px solid var(--border-mid);border-radius:10px;background:var(--bg-primary);color:var(--text-primary);font-family:inherit;outline:none;-webkit-appearance:none;">
+          <option value="evm">🦊 EVM (Ethereum, Polygon, BNB…)</option>
+          <option value="btc">₿ Bitcoin</option>
+          <option value="sol">◎ Solana</option>
+        </select>
       </div>
-      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:6px;">BITCOIN (bc1… / 1… / 3…)</div>
-      <input class="inp" type="text" id="btcAddressInput" placeholder="bc1..." style="font-size:12px;font-family:monospace;letter-spacing:.02em;margin-bottom:10px;" oninput="this.value=this.value.trim()"/>
-      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.06em;margin-bottom:6px;">SOLANA (7x… / base58)</div>
-      <input class="inp" type="text" id="solAddressInput" placeholder="7xKX..." style="font-size:12px;font-family:monospace;letter-spacing:.02em;margin-bottom:10px;" oninput="this.value=this.value.trim()"/>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">Solo lectura — muestra tus tokens en Inversiones. Ninguna clave privada es necesaria.</div>
-      <button class="btn sec" onclick="saveCryptoWallet()">Guardar wallets</button>
+      <div id="wChainsRow" style="margin-bottom:8px;">
+        <label class="il">REDES EVM</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="wc-eth"       checked style="accent-color:var(--green);"> Ethereum</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="wc-polygon"   checked style="accent-color:var(--green);"> Polygon</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="wc-bsc"              style="accent-color:var(--green);"> BNB Chain</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="wc-base"             style="accent-color:var(--green);"> Base</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-primary);cursor:pointer;"><input type="checkbox" id="wc-avalanche"        style="accent-color:var(--green);"> Avalanche</label>
+        </div>
+      </div>
+      <div class="ig"><label class="il">DIRECCIÓN</label><input class="inp" type="text" id="wAddress" placeholder="0x… / bc1… / 7x…" style="font-family:monospace;font-size:12px;" oninput="this.value=this.value.trim()"/></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">Solo lectura — no se necesita clave privada ni seed phrase.</div>
+      <button class="btn" onclick="addWallet()">Añadir wallet</button>
     </div>
     <div class="stitle">POLYMARKET</div>
     <div class="card">
