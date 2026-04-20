@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/polymarket.js": {
+      "regions": ["fra1"]
+    }
+  },
   "headers": [
     {
       "source": "/",
