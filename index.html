@@ -758,7 +758,7 @@ function expXL(){if(typeof XLSX==='undefined'){toast('Librería no disponible');
 async function resetApp(){if(!confirm('¿Seguro? Todos los datos se eliminarán en este dispositivo y en la nube.'))return;S.txs=[];S.invs=[];S.ctas=[];S.bud={general:0,COP:{},USD:{}};S.cats=[...DC];localStorage.setItem('mf_v1',JSON.stringify({txs:[],invs:[],ctas:[],cats:[...DC],bud:{general:0,COP:{},USD:{}},trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:false,priv:{}}));if(supaUser){await supa.from('finanzas_data').delete().eq('user_id',supaUser.id);}toast('Datos eliminados');renderAll();}
 function renderAll(){renderDash();renderCG();renderHist();renderBProg();renderInv();renderCuentas();renderCatEdit();renderWalletList();updTRM();const ml=$e('mlB');if(ml)ml.textContent=MESES[S.bm]+' '+S.by;const pwi=$e('polyWalletInput');if(pwi&&document.activeElement!==pwi)pwi.value=S.polyWallet;}
 const mf=$e('mfecha');if(mf)mf.value=new Date().toISOString().split('T')[0];
-load();genIcon();selT(S.tipo);renderAll();autoTRM();setInterval(autoTRM,2*60*60*1000);updPrivBtns();if(S.polyWallet)fetchPolymarket();if(S.cryptoWallet||S.btcAddress||S.solAddress)fetchCryptoWallet();
+load();genIcon();selT(S.tipo);renderAll();autoTRM();setInterval(autoTRM,2*60*60*1000);updPrivBtns();if(S.polyWallet)fetchPolymarket();if(S.wallets.length)fetchCryptoWallet();
 // Verificar sesión activa al arrancar
 supa.auth.getSession().then(({data:{session}})=>{
   if(session){supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');syncDown();}
