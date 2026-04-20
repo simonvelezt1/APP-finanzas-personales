@@ -422,7 +422,7 @@ async function syncUp(){
   if(!supaUser)return;
   setSyncDot('busy');
   try{
-    const data={txs:S.txs,ctas:S.ctas,invs:S.invs,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:S.privGlobal,priv:S.priv};
+    const data={txs:S.txs,ctas:S.ctas,invs:S.invs,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:S.privGlobal,priv:S.priv,polyWallet:S.polyWallet};
     const{error}=await supa.from('finanzas_data').upsert({user_id:supaUser.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
     setSyncDot(error?'err':'ok');
   }catch(e){setSyncDot('err');}
