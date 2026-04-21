@@ -270,15 +270,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="ig"><label class="il">NOMBRE</label><input class="inp" type="text" id="c-nom" placeholder="Cuenta de ahorros principal"/></div>
       <div class="ig"><label class="il">BANCO / ENTIDAD</label><input class="inp" type="text" id="c-banco" placeholder="Bancolombia, Nequi, Davivienda..."/></div>
       <div class="ig"><label class="il">TIPO</label>
-        <select class="sel-inp" id="c-tipo">
+        <select class="sel-inp" id="c-tipo" onchange="toggleCupoRow()">
           <option value="ahorros">Ahorros</option>
           <option value="corriente">Corriente</option>
           <option value="cdt">CDT / Inversión fija</option>
           <option value="digital">Billetera digital</option>
           <option value="efectivo">Efectivo</option>
+          <option value="credito">Tarjeta de Crédito</option>
           <option value="otro">Otro</option>
         </select>
       </div>
+      <div class="ig" id="cupoRow" style="display:none;"><label class="il">CUPO TOTAL (opcional)</label><input class="inp" type="number" id="c-cupo" placeholder="0" inputmode="decimal"/></div>
       <div class="ig"><label class="il">MONEDA</label>
         <div class="seg"><button class="sb active" id="cw-cop" onclick="selCW('COP')">COP</button><button class="sb" id="cw-usd" onclick="selCW('USD')">USD</button></div>
       </div>
