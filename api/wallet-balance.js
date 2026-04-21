@@ -155,7 +155,7 @@ export default async function handler(req, res) {
 
   // Bitcoin
   if (btcAddress) {
-    if (!/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(btcAddress)) {
+    if (!/^(bc1[a-z0-9]{39,59}|[13][a-zA-HJ-NP-Z0-9]{24,33})$/.test(btcAddress)) {
       return res.status(400).json({ error: 'Dirección Bitcoin inválida' });
     }
     tasks.push(getBitcoinBalance(btcAddress));
