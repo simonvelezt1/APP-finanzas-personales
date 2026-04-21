@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mis Finanzas** — A personal finance management app for a Colombian user. Single self-contained `index.html` file with no build step, no dependencies, and no framework. Everything (HTML, CSS, JS) lives in one file.
+**Mis Finanzas** — A personal finance management app for a Colombian user. Single self-contained `index.html` file with no build step, no dependencies, and no framework. Everything (HTML, CSS, JS) lives in one file. Serverless API functions live in `api/`.
 
 ## Deployment
 
@@ -14,13 +14,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Any edit to `index.html` auto-commits and pushes to GitHub via a PostToolUse hook (`.claude/settings.json`). Vercel and GitHub Pages both auto-deploy on push. `vercel.json` sets `Cache-Control: no-cache` on the HTML so browsers always fetch the latest version.
 
-**Sync rule:** GitHub, Vercel and Supabase must always be in sync. `index.html` edits auto-push via the PostToolUse hook. Changes to other **tracked** files (e.g. `vercel.json`, `CLAUDE.md`) must be committed and pushed manually: `git add <file> && git commit && git push`.
+**Sync rule:** GitHub, Vercel and Supabase must always be in sync. `index.html` edits auto-push via the PostToolUse hook. Changes to other **tracked** files (e.g. `vercel.json`, `CLAUDE.md`, `api/*.js`) must be committed and pushed manually: `git add <file> && git commit && git push`.
 
 ## What lives where
 
 | File | GitHub | PC only | Why |
 |---|---|---|---|
 | `index.html` | ✅ auto-push | | The app |
+| `api/polymarket.js` | ✅ manual push | | Vercel proxy for Polymarket |
+| `api/wallet-balance.js` | ✅ manual push | | Vercel proxy for Moralis/BTC/SOL |
 | `vercel.json` | ✅ manual push | | Deployment config |
 | `CLAUDE.md` | ✅ manual push | | Architecture docs |
 | `.gitignore` | ✅ manual push | | Protects local files |
@@ -31,7 +33,24 @@ Any edit to `index.html` auto-commits and pushes to GitHub via a PostToolUse hoo
 
 ## Architecture
 
-The entire app is `index.html`. There is no build process — edit the file and it's done.
+The app is `index.html` + two Vercel API proxy functions in `api/`. There is no build process.
+
+### Vercel API Functions
+
+Both functions run in **Frankfurt (fra1)** to avoid geo-blocks (Polymarket blocked in Colombia; Moralis proxied to keep API key server-side).
+
+#### `api/polymarket.js`
+- Proxies `GET /api/polymarket?user={walletAddress}` → `data-api.polymarket.com/positions`
+- No API key required — Polymarket Data API is public
+- Returns user's open prediction market positions
+
+#### `api/wallet-balance.js`
+- Proxies `GET /api/wallet-balance?address={evm}&chains={...}&btcAddress={...}&solAddress={...}` → Moralis + mempool.space + Binance
+- Requires `MORALIS_KEY` environment variable set in Vercel dashboard (never in code)
+- Supports EVM chains (eth, polygon, bsc, base, avalanche) via Moralis
+- Supports Bitcoin via mempool.space (balance) + Binance (price) — no key needed
+- Supports Solana + SPL tokens via Moralis Solana gateway (same key)
+- All chains queried in parallel via `Promise.allSettled`
 
 ### State
 
@@ -52,13 +71,28 @@ S = {
   vm, vy, bm, by,                      // month/year for history and budget views
   editCta,        // id of account currently being inline-edited (null otherwise)
   privGlobal,     // boolean — global privacy mode (hides all monetary values app-wide)
-  priv: {}        // per-widget privacy: { tot, cash, gm, bal, sav, topcat } → boolean
+  priv: {},       // per-widget privacy: { tot, cash, gm, bal, sav, topcat } → boolean
+  polyWallet,     // string — Polymarket proxy wallet address (0x...)
+  wallets[],      // crypto wallets: { id, type, label, address, chains[] }
 }
 ```
+
+**`wallets[]` schema:** `{ id: number, type: 'evm'|'btc'|'sol', label: string, address: string, chains: string[] }`
+- `chains` only meaningful for `type === 'evm'`; empty array for BTC/SOL
+- `migrateWallets(d)` auto-converts old format (`cryptoWallet`, `btcAddress`, `solAddress`) to `wallets[]` on load/syncDown
 
 `persist()` saves all fields above (except `trmOpen` and `editCta`) to `localStorage` and calls `debouncedSyncUp()`. The `localStorage` format and the Supabase payload must always match — add new fields to both simultaneously.
 
 `ctaId` on transactions is `null` for unlinked entries or old data. The migration in `load()` sets `ctaId = null` on any existing transaction missing the field.
+
+### Module-level variables (not in S)
+
+```js
+let polyPositions = [];   // fetched Polymarket positions (in-memory, not persisted)
+let polyLoading = false;
+let cryptoTokens = [];    // fetched crypto wallet tokens (in-memory, not persisted)
+let cryptoLoading = false;
+```
 
 ### Key Financial Formulas
 
@@ -107,7 +141,7 @@ Two layers of value hiding:
 - Inicio: all dashboard widgets, composition card, recent transactions
 - Movimientos: each transaction amount + monthly summary totals
 - Cuentas: hero total, pills, each account balance
-- Inversiones: investment names, cost→value, return %, COP equivalent, totals
+- Inversiones: investment names, cost→value, return %, COP equivalent, totals; also hides Polymarket and Crypto Wallet amounts
 - Presupuesto: spent/budgeted/remaining amounts (percentages and bars stay visible)
 
 **Per-widget (`S.priv[key]`):** Each card on Inicio has an individual 👁️ eye button. Keys: `tot` (hero + composition card), `cash`, `gm`, `bal`, `sav`, `topcat`. Independent of global.
@@ -127,6 +161,8 @@ Two wallets: `COP` and `USD`. All totals are converted to COP for display using 
 ### Rendering
 
 No virtual DOM. Each tab has a `render*()` function that directly sets `innerHTML` or `textContent`. `renderAll()` refreshes everything. Navigation calls `go(page, btn)`.
+
+**Important:** `renderInv()` renders three independent sections — manual investments, Polymarket, and Crypto Wallet — using nested `if/else` blocks (NOT early `return`) so all three always render regardless of which are configured.
 
 ### Transaction Search
 
@@ -170,11 +206,11 @@ Row Level Security is enabled — users can only read/write their own row.
 - Sync status dot (`#sync-dot`) in topbar: green = synced, amber = busy, muted = no session
 
 **Fields synced (both `syncUp` and `syncDown` must include all of these):**
-`txs, ctas, invs, cats, bud, trm, trmMan, trmDate, privGlobal, priv`
+`txs, ctas, invs, cats, bud, trm, trmMan, trmDate, privGlobal, priv, polyWallet, wallets`
 
 **Key functions:**
 - `syncUp()` — async, upserts full state to Supabase
-- `syncDown()` — async, fetches cloud state, overwrites `S` fields + localStorage, calls `renderAll()`
+- `syncDown()` — async, fetches cloud state, overwrites `S` fields + localStorage, calls `renderAll()`, then calls `fetchPolymarket()` and `fetchCryptoWallet()` if configured
 - `debouncedSyncUp()` — 1500ms debounced wrapper called by `persist()`
 - `sendMagicLink()` — sends OTP email via `supa.auth.signInWithOtp()`
 - `doSignOut()` — signs out and shows login overlay
@@ -185,6 +221,41 @@ Row Level Security is enabled — users can only read/write their own row.
 **`resetApp()`:** resets `S` to empty state, writes localStorage (with `privGlobal:false, priv:{}`), deletes the Supabase row to prevent cloud restore on next sync.
 
 **Operational note:** Supabase free tier pauses after 7 days of inactivity. Data is not lost — reactivate from the Supabase dashboard.
+
+### Polymarket Integration
+
+Displays the user's open prediction market positions in **Inversiones → POLYMARKET**.
+
+- `S.polyWallet` — the user's Polymarket proxy wallet address (set in Ajustes → POLYMARKET)
+- `fetchPolymarket(showToast?)` — calls `/api/polymarket?user={polyWallet}`, stores results in `polyPositions[]`, calls `renderInv()`
+- `savePolyWallet()` — validates and saves the wallet address, triggers fetch
+- Data: market title, outcome (YES/NO), initial value, current value, P&L in USD and COP
+- Auto-fetches on app load and after `syncDown()`
+
+**Note:** Polymarket is blocked in Colombia and the US at the website level, but the Data API (read-only) is not geo-restricted. The Vercel proxy in Frankfurt ensures reliable access.
+
+### Crypto Wallet Integration
+
+Displays real-time crypto token balances in **Inversiones → CRYPTO WALLET**.
+
+- `S.wallets[]` — list of configured wallets `{ id, type, label, address, chains }`
+- `fetchCryptoWallet(showToast?)` — queries `/api/wallet-balance` for each wallet in parallel, combines tokens into `cryptoTokens[]`, calls `renderInv()`
+- `addWallet()` — validates and adds a wallet to `S.wallets`, persists, triggers fetch
+- `delWallet(id)` — removes wallet, clears `cryptoTokens`, re-fetches remaining
+- `renderWalletList()` — renders the wallet list in Ajustes → CRYPTO WALLETS
+- `toggleWType()` — shows/hides EVM chain checkboxes in the add-wallet form
+
+**Data sources by chain type:**
+
+| Type | Balance source | Price source | API key |
+|---|---|---|---|
+| EVM (eth/polygon/bsc/base/avalanche) | Moralis EVM API | Moralis | `MORALIS_KEY` in Vercel |
+| Bitcoin | mempool.space | Binance public | None |
+| Solana + SPL tokens | Moralis Solana gateway | Moralis / Binance | `MORALIS_KEY` in Vercel |
+
+**Migration:** `migrateWallets(d)` converts old single-address fields (`cryptoWallet`, `btcAddress`, `solAddress`) to the `wallets[]` array format automatically on `load()` and `syncDown()`.
+
+**Display:** Each token shows logo, name, symbol, balance, wallet label, chain, USD value, and COP equivalent. All amounts hidden when `S.privGlobal` is true.
 
 ## Currency & Locale
 
