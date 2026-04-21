@@ -589,8 +589,8 @@ function genIcon(){
   img.src=logoPath;
 }
 function navBtn(page){const map={inicio:0,cuentas:1,movim:2,presup:3,invers:4,ajustes:5};return document.querySelectorAll('.nb')[map[page]||0];}
-function populateCtaSel(){const sel=$e('ctaSel');if(!sel)return;sel.innerHTML='<option value="">Sin cuenta específica</option>';S.ctas.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nom+' ('+c.wal+' '+fmt(c.saldo,c.wal)+')';sel.appendChild(o);});const newO=document.createElement('option');newO.value='__new__';newO.textContent='+ Crear nueva cuenta';sel.appendChild(newO);}
-function onCtaSelChange(){const sel=$e('ctaSel');if(sel&&sel.value==='__new__'){sel.value='';go('cuentas',navBtn('cuentas'));toast('Crea una cuenta y vuelve a registrar el ingreso');}}
+function populateCtaSel(){const sel=$e('ctaSel');if(!sel)return;sel.innerHTML='<option value="">Sin cuenta específica</option>';S.ctas.forEach(c=>{const o=document.createElement('option');o.value=c.id;const isCredit=c.tipo==='credito';const balLabel=isCredit?'Deuda: '+fmt(c.saldo,c.wal):fmt(c.saldo,c.wal);o.textContent=c.nom+' ('+c.wal+' · '+balLabel+')';sel.appendChild(o);});const newO=document.createElement('option');newO.value='__new__';newO.textContent='+ Crear nueva cuenta';sel.appendChild(newO);}
+function onCtaSelChange(){const sel=$e('ctaSel');if(sel&&sel.value==='__new__'){sel.value='';go('cuentas',navBtn('cuentas'));toast('Crea una cuenta y vuelve a registrar el movimiento');}}
 const DC=[
   {id:'vivienda',n:'Vivienda',i:'🏠'},{id:'alimentacion',n:'Alimentación',i:'🍽️'},
   {id:'transporte',n:'Transporte',i:'🚗'},{id:'salud',n:'Salud',i:'🏥'},
