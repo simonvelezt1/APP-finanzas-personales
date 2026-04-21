@@ -658,7 +658,8 @@ function calcPat(){
   const cryptoCOP=cryptoTokens.reduce((a,t)=>a+(t.usd_value||0)*S.trm,0);
   return{ctasCOP,invCOP,polyCOP,cryptoCOP,total:ctasCOP+invCOP+polyCOP+cryptoCOP};
 }
-function addCuenta(){const nom=($e('c-nom')?.value||'').trim();if(!nom){toast('Ingresa el nombre de la cuenta');return;}S.ctas.push({id:Date.now(),nom,banco:($e('c-banco')?.value||'').trim(),tipo:$e('c-tipo')?.value||'ahorros',wal:S.cWal,saldo:parseFloat($e('c-saldo')?.value)||0});persist();['c-nom','c-banco','c-saldo'].forEach(id=>{const e=$e(id);if(e)e.value='';});toast('Cuenta agregada ✓');renderAll();}
+function toggleCupoRow(){const t=$e('c-tipo')?.value;const r=$e('cupoRow');if(r)r.style.display=t==='credito'?'block':'none';}
+function addCuenta(){const nom=($e('c-nom')?.value||'').trim();if(!nom){toast('Ingresa el nombre de la cuenta');return;}const tipo=$e('c-tipo')?.value||'ahorros';const cupo=tipo==='credito'?(parseFloat($e('c-cupo')?.value)||0):0;S.ctas.push({id:Date.now(),nom,banco:($e('c-banco')?.value||'').trim(),tipo,wal:S.cWal,saldo:parseFloat($e('c-saldo')?.value)||0,cupo});persist();['c-nom','c-banco','c-saldo','c-cupo'].forEach(id=>{const e=$e(id);if(e)e.value='';});toggleCupoRow();toast('Cuenta agregada ✓');renderAll();}
 function delCuenta(id){S.ctas=S.ctas.filter(c=>c.id!==id);persist();renderAll();}
 function startEdit(id){S.editCta=id;renderCuentas();setTimeout(()=>{const i=$e('es-'+id);if(i){i.focus();i.select();}},50);}
 function cancelEdit(){S.editCta=null;renderCuentas();}
