@@ -706,6 +706,13 @@ function renderDash(){
   setText('h-cash',pv('cash',fCOP(pat.ctasCOP)));
   setText('h-ctas','Cuentas '+(isHid('tot')?'••••':fCOP(pat.ctasCOP)));
   setText('h-invp','Inversiones '+(isHid('tot')?'••••':fCOP(pat.invCOP)));
+  // Pills adicionales para poly y crypto (añadir/quitar dinámicamente)
+  const pillsEl=$e('h-pills');
+  if(pillsEl){
+    let polyPill=$e('h-poly-pill'),cryptoPill=$e('h-crypto-pill');
+    if(pat.polyCOP>0){if(!polyPill){polyPill=document.createElement('span');polyPill.id='h-poly-pill';polyPill.className='h-pill';polyPill.onclick=function(e){e.stopPropagation();go('invers',navBtn('invers'));};pillsEl.appendChild(polyPill);}polyPill.textContent='Polymarket '+(isHid('tot')?'••••':fCOP(pat.polyCOP));}else{if(polyPill)polyPill.remove();}
+    if(pat.cryptoCOP>0){if(!cryptoPill){cryptoPill=document.createElement('span');cryptoPill.id='h-crypto-pill';cryptoPill.className='h-pill';cryptoPill.onclick=function(e){e.stopPropagation();go('invers',navBtn('invers'));};pillsEl.appendChild(cryptoPill);}cryptoPill.textContent='Crypto '+(isHid('tot')?'••••':fCOP(pat.cryptoCOP));}else{if(cryptoPill)cryptoPill.remove();}
+  }
   const pc=$e('h-pat-card');
   if(pc){
     if(pat.total>0||pat.polyCOP>0||pat.cryptoCOP>0){
