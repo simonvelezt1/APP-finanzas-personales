@@ -604,6 +604,9 @@ async function autoTRM(){const sources=[async()=>{const r=await fetch('https://w
 function $e(id){return document.getElementById(id);}
 function setText(id,v){const e=$e(id);if(e)e.textContent=v;}
 function setStyle(id,p,v){const e=$e(id);if(e)e.style[p]=v;}
+// Escapa caracteres HTML para inserción segura en innerHTML
+const _ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>_ESC[m]);}
 function updTRM(){const v='$'+Math.round(S.trm).toLocaleString('es-CO')+' COP';setText('tVal',v);const dot=$e('tDot');if(dot)dot.className='trm-dot'+(S.trmMan?'':' ok');setText('aj-trm','TRM: $'+Math.round(S.trm).toLocaleString('es-CO')+' COP/USD');setText('aj-src',S.trmDate||(S.trmMan?'Ingresada manualmente':'—'));}
 function toggleTRM(){S.trmOpen=!S.trmOpen;const r=$e('trmRow');if(r)r.className='trm-edit-row'+(S.trmOpen?' open':'');if(S.trmOpen){const i=$e('trmInp');if(i){i.value=Math.round(S.trm);i.focus();i.select();}}}
 function saveTRM(){const v=parseFloat($e('trmInp')?.value);if(!v||v<100){toast('Valor inválido');return;}S.trm=v;S.trmMan=true;S.trmDate='Manual · '+new Date().toLocaleDateString('es-CO');persist();updTRM();renderAll();S.trmOpen=false;const r=$e('trmRow');if(r)r.className='trm-edit-row';toast('TRM actualizada ✓');}
