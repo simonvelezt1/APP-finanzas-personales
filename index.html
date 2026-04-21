@@ -569,6 +569,7 @@ function genIcon(){
   img.onload=function(){
     const ati=document.getElementById('ati');if(ati)ati.href=logoPath;
     const logo=document.getElementById('appLogo');if(logo)logo.src=logoPath;
+    const loginLogo=document.getElementById('loginLogo');if(loginLogo)loginLogo.src=logoPath;
   };
   img.onerror=function(){
     // Fallback: canvas verde con "MF"
@@ -588,6 +589,7 @@ function genIcon(){
       const png=cv.toDataURL('image/png');
       const ati=document.getElementById('ati');if(ati)ati.href=png;
       const logo=document.getElementById('appLogo');if(logo)logo.src=png;
+      const loginLogo=document.getElementById('loginLogo');if(loginLogo)loginLogo.src=png;
     }catch(e){}
   };
   img.src=logoPath;
