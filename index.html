@@ -650,7 +650,14 @@ function selCW(w){S.cWal=w;$e('cw-cop').classList.toggle('active',w==='COP');$e(
 function selCat(id){S.cat=id;renderCG();}
 function chM(d){S.vm+=d;if(S.vm<0){S.vm=11;S.vy--;}if(S.vm>11){S.vm=0;S.vy++;}const ts=$e('txSearch');if(ts)ts.value='';renderHist();}
 function chMB(d){S.bm+=d;if(S.bm<0){S.bm=11;S.by--;}if(S.bm>11){S.bm=0;S.by++;}renderBProg();}
-function calcPat(){const ctasCOP=S.ctas.reduce((a,c)=>a+toCOP(c.saldo,c.wal),0);const invCOP=S.invs.reduce((a,i)=>a+toCOP(i.val,i.wal),0);return{ctasCOP,invCOP,total:ctasCOP+invCOP};}
+function calcPat(){
+  // Cuentas: tarjetas de crédito restan (son pasivos)
+  const ctasCOP=S.ctas.reduce((a,c)=>{const v=toCOP(c.saldo,c.wal);return a+(c.tipo==='credito'?-v:v);},0);
+  const invCOP=S.invs.reduce((a,i)=>a+toCOP(i.val,i.wal),0);
+  const polyCOP=polyPositions.reduce((a,p)=>a+(parseFloat(p.currentValue||0)*S.trm),0);
+  const cryptoCOP=cryptoTokens.reduce((a,t)=>a+(t.usd_value||0)*S.trm,0);
+  return{ctasCOP,invCOP,polyCOP,cryptoCOP,total:ctasCOP+invCOP+polyCOP+cryptoCOP};
+}
 function addCuenta(){const nom=($e('c-nom')?.value||'').trim();if(!nom){toast('Ingresa el nombre de la cuenta');return;}S.ctas.push({id:Date.now(),nom,banco:($e('c-banco')?.value||'').trim(),tipo:$e('c-tipo')?.value||'ahorros',wal:S.cWal,saldo:parseFloat($e('c-saldo')?.value)||0});persist();['c-nom','c-banco','c-saldo'].forEach(id=>{const e=$e(id);if(e)e.value='';});toast('Cuenta agregada ✓');renderAll();}
 function delCuenta(id){S.ctas=S.ctas.filter(c=>c.id!==id);persist();renderAll();}
 function startEdit(id){S.editCta=id;renderCuentas();setTimeout(()=>{const i=$e('es-'+id);if(i){i.focus();i.select();}},50);}
