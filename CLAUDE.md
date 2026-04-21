@@ -83,7 +83,7 @@ S = {
 
 `persist()` saves all fields above (except `trmOpen` and `editCta`) to `localStorage` and calls `debouncedSyncUp()`. The `localStorage` format and the Supabase payload must always match — add new fields to both simultaneously.
 
-`ctaId` on transactions is `null` for unlinked entries or old data. The migration in `load()` sets `ctaId = null` on any existing transaction missing the field.
+`ctaId` on transactions is `null` for unlinked entries or old data. The migration `txs.forEach(t => { if(t.ctaId===undefined) t.ctaId=null })` runs in both `load()` and `syncDown()` — intentional so the fix applies regardless of which source loads the data.
 
 ### Module-level variables (not in S)
 
@@ -92,6 +92,8 @@ let polyPositions = [];   // fetched Polymarket positions (in-memory, not persis
 let polyLoading = false;
 let cryptoTokens = [];    // fetched crypto wallet tokens (in-memory, not persisted)
 let cryptoLoading = false;
+let _editId = null;       // id of transaction open in edit modal (null when closed)
+let _toastTimer = null;   // debounce timer to prevent stacked toast notifications
 ```
 
 ### Key Financial Formulas
@@ -110,7 +112,15 @@ let cryptoLoading = false;
 2. **Fallback 1:** `https://open.er-api.com/v6/latest/USD`
 3. **Fallback 2:** `https://api.exchangerate-api.com/v4/latest/USD`
 
-Uses `AbortSignal.timeout()` (no leaked timers). Auto-refreshes every 2 hours via `setInterval`. Label shows `"TRM Oficial · [date]"` on success.
+Uses `AbortSignal.timeout()` (no leaked timers). Auto-refreshes every 2 hours via `setInterval`. Label shows `"TRM Oficial · [date]"` on success. If all 3 sources fail, falls back silently and calls `updTRM()` with whatever value `S.trm` already holds.
+
+**Two manual TRM entry paths:**
+- **Dashboard chip** (`saveTRM()`) — reads `#trmInp`, toggles `S.trmOpen`
+- **Ajustes tab** (`saveTRMaj()`) — reads `#aj-inp`
+
+Both update `S.trm`, `S.trmMan`, `S.trmDate`, then call `persist()`, `updTRM()`, and `renderAll()`.
+
+`updTRM()` refreshes all TRM display elements: `#tVal`, `#tDot` (dot color), `#aj-trm`, `#aj-src`.
 
 ### Income → Account Linking
 
@@ -162,7 +172,7 @@ Two wallets: `COP` and `USD`. All totals are converted to COP for display using 
 
 No virtual DOM. Each tab has a `render*()` function that directly sets `innerHTML` or `textContent`. `renderAll()` refreshes everything. Navigation calls `go(page, btn)`.
 
-**Important:** `renderInv()` renders three independent sections — manual investments, Polymarket, and Crypto Wallet — using nested `if/else` blocks (NOT early `return`) so all three always render regardless of which are configured.
+**`renderInv()` structure:** Renders three independent sections — manual investments, Polymarket, and Crypto Wallet. The manual investments section uses a normal early-`return` guard (`if(!el)return`). The Polymarket and Crypto sections follow it sequentially using `if/else` blocks without early returns, so both always render regardless of whether wallets are configured. Never add an early `return` between these sections.
 
 ### Transaction Search
 
@@ -203,7 +213,7 @@ Row Level Security is enabled — users can only read/write their own row.
 - `persist()` → saves to `localStorage` immediately, then calls `debouncedSyncUp()` (1.5 s debounce) → `syncUp()` upserts full state to Supabase
 - On app open → `supa.auth.getSession()` checks for existing session → calls `syncDown()` which fetches the cloud row, overwrites `S`, writes localStorage, then calls `renderAll()`
 - Offline: `syncUp()` fails silently; `localStorage` keeps the data; syncs when connectivity returns
-- Sync status dot (`#sync-dot`) in topbar: green = synced, amber = busy, muted = no session
+- Sync status dot (`#sync-dot`) in topbar managed by `setSyncDot(state)`: `'ok'` → green, `'busy'` → amber, anything else → muted (no session or error)
 
 **Fields synced (both `syncUp` and `syncDown` must include all of these):**
 `txs, ctas, invs, cats, bud, trm, trmMan, trmDate, privGlobal, priv, polyWallet, wallets`
@@ -218,7 +228,7 @@ Row Level Security is enabled — users can only read/write their own row.
 
 **Login overlay** (`#login-overlay`): full-screen overlay shown when `supaUser` is null.
 
-**`resetApp()`:** resets `S` to empty state, writes localStorage (with `privGlobal:false, priv:{}`), deletes the Supabase row to prevent cloud restore on next sync.
+**`resetApp()`:** resets `txs`, `invs`, `ctas`, `bud`, `cats` to empty/defaults and writes localStorage. Does **not** reset `polyWallet` or `wallets` — those survive a reset. Deletes the Supabase row to prevent cloud restore on next sync. Auth session stays active.
 
 **Operational note:** Supabase free tier pauses after 7 days of inactivity. Data is not lost — reactivate from the Supabase dashboard.
 
@@ -229,7 +239,7 @@ Displays the user's open prediction market positions in **Inversiones → POLYMA
 - `S.polyWallet` — the user's Polymarket proxy wallet address (set in Ajustes → POLYMARKET)
 - `fetchPolymarket(showToast?)` — calls `/api/polymarket?user={polyWallet}`, stores results in `polyPositions[]`, calls `renderInv()`
 - `savePolyWallet()` — validates and saves the wallet address, triggers fetch
-- Data: market title, outcome (YES/NO), initial value, current value, P&L in USD and COP
+- Data: market title, `outcome` (e.g. `"YES"` / `"NO"` — rendered as a badge if present), initial value, current value, P&L in USD and COP
 - Auto-fetches on app load and after `syncDown()`
 
 **Note:** Polymarket is blocked in Colombia and the US at the website level, but the Data API (read-only) is not geo-restricted. The Vercel proxy in Frankfurt ensures reliable access.
@@ -255,7 +265,11 @@ Displays real-time crypto token balances in **Inversiones → CRYPTO WALLET**.
 
 **Migration:** `migrateWallets(d)` converts old single-address fields (`cryptoWallet`, `btcAddress`, `solAddress`) to the `wallets[]` array format automatically on `load()` and `syncDown()`.
 
+**Token shape in `cryptoTokens[]`:** `{ name, symbol, logo, balance, chain, usd_value, walletLabel }` — `walletLabel` is injected by `fetchCryptoWallet()` from the matching entry in `S.wallets`. Only tokens with `usd_value > 0.01` are kept; sorted descending by value.
+
 **Display:** Each token shows logo, name, symbol, balance, wallet label, chain, USD value, and COP equivalent. All amounts hidden when `S.privGlobal` is true.
+
+**`addInv()` note:** Zero (`0`) is a valid cost or value (e.g. an airdrop). Validation rejects empty strings and negative numbers, but accepts `0`.
 
 ## Currency & Locale
 

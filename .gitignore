@@ -5,3 +5,5 @@
 *.png
 *.jpg
 *.jpeg
+# Excepción: ícono de la app (debe desplegarse en Vercel/GitHub)
+!logo.png
