@@ -476,7 +476,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ── Supabase sync ────────────────────────────────────────────────
 const SUPA_URL='https://ukqruxdknpaljxndyswl.supabase.co';
 const SUPA_KEY='sb_publishable_8n5K25ZY4xZWX3bTprZ81w_3H2_-1Tp';
-const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{flowType:'implicit'}});
 let supaUser=null;
 let _syncTimer=null;
 
