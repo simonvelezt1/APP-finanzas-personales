@@ -558,25 +558,35 @@ supa.auth.onAuthStateChange((event,session)=>{
 });
 // ─────────────────────────────────────────────────────────────────
 
-// Generate 180×180 PWA icon via canvas and inject into <link> + logo
+// Carga el ícono real (logo.png) si está disponible; fallback a canvas "MF"
 function genIcon(){
-  try{
-    const cv=document.createElement('canvas');cv.width=180;cv.height=180;
-    const ctx=cv.getContext('2d');
-    const r=36;
-    ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(180-r,0);ctx.quadraticCurveTo(180,0,180,r);
-    ctx.lineTo(180,180-r);ctx.quadraticCurveTo(180,180,180-r,180);
-    ctx.lineTo(r,180);ctx.quadraticCurveTo(0,180,0,180-r);
-    ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();
-    ctx.fillStyle='#22c55e';ctx.fill();
-    ctx.fillStyle='#ffffff';
-    ctx.font='bold 80px -apple-system,BlinkMacSystemFont,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('MF',90,96);
-    const png=cv.toDataURL('image/png');
-    const ati=document.getElementById('ati');if(ati)ati.href=png;
-    const logo=document.getElementById('appLogo');if(logo)logo.src=png;
-  }catch(e){}
+  const logoPath='./logo.png';
+  const img=new Image();
+  img.onload=function(){
+    const ati=document.getElementById('ati');if(ati)ati.href=logoPath;
+    const logo=document.getElementById('appLogo');if(logo)logo.src=logoPath;
+  };
+  img.onerror=function(){
+    // Fallback: canvas verde con "MF"
+    try{
+      const cv=document.createElement('canvas');cv.width=180;cv.height=180;
+      const ctx=cv.getContext('2d');
+      const r=36;
+      ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(180-r,0);ctx.quadraticCurveTo(180,0,180,r);
+      ctx.lineTo(180,180-r);ctx.quadraticCurveTo(180,180,180-r,180);
+      ctx.lineTo(r,180);ctx.quadraticCurveTo(0,180,0,180-r);
+      ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();
+      ctx.fillStyle='#22c55e';ctx.fill();
+      ctx.fillStyle='#ffffff';
+      ctx.font='bold 80px -apple-system,BlinkMacSystemFont,sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('MF',90,96);
+      const png=cv.toDataURL('image/png');
+      const ati=document.getElementById('ati');if(ati)ati.href=png;
+      const logo=document.getElementById('appLogo');if(logo)logo.src=png;
+    }catch(e){}
+  };
+  img.src=logoPath;
 }
 function navBtn(page){const map={inicio:0,cuentas:1,movim:2,presup:3,invers:4,ajustes:5};return document.querySelectorAll('.nb')[map[page]||0];}
 function populateCtaSel(){const sel=$e('ctaSel');if(!sel)return;sel.innerHTML='<option value="">Sin cuenta específica</option>';S.ctas.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nom+' ('+c.wal+' '+fmt(c.saldo,c.wal)+')';sel.appendChild(o);});const newO=document.createElement('option');newO.value='__new__';newO.textContent='+ Crear nueva cuenta';sel.appendChild(newO);}
