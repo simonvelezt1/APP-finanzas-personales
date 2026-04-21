@@ -708,16 +708,21 @@ function renderDash(){
   setText('h-invp','Inversiones '+(isHid('tot')?'••••':fCOP(pat.invCOP)));
   const pc=$e('h-pat-card');
   if(pc){
-    if(pat.total>0){
+    if(pat.total>0||pat.polyCOP>0||pat.cryptoCOP>0){
       pc.style.display='block';
-      const copT=S.ctas.filter(c=>c.wal==='COP').reduce((a,c)=>a+c.saldo,0);
-      const usdT=S.ctas.filter(c=>c.wal==='USD').reduce((a,c)=>a+c.saldo,0);
+      const copT=S.ctas.filter(c=>c.wal==='COP'&&c.tipo!=='credito').reduce((a,c)=>a+c.saldo,0);
+      const usdT=S.ctas.filter(c=>c.wal==='USD'&&c.tipo!=='credito').reduce((a,c)=>a+c.saldo,0);
+      const debtCOP=S.ctas.filter(c=>c.wal==='COP'&&c.tipo==='credito').reduce((a,c)=>a+c.saldo,0);
+      const debtUSD=S.ctas.filter(c=>c.wal==='USD'&&c.tipo==='credito').reduce((a,c)=>a+c.saldo,0);
       const rows=$e('h-pat-rows');
       if(rows){
         let html='';
         if(copT>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Cuentas COP</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(copT))}</span></div>`;
         if(usdT>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Cuentas USD×TRM</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(usdT*S.trm))}</span></div>`;
         if(pat.invCOP>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Inversiones</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(pat.invCOP))}</span></div>`;
+        if(pat.polyCOP>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Polymarket</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(pat.polyCOP))}</span></div>`;
+        if(pat.cryptoCOP>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--text-secondary);">Crypto</span><span style="font-size:13px;font-weight:500;color:var(--text-primary);">${pv('tot',fCOP(pat.cryptoCOP))}</span></div>`;
+        if((debtCOP+debtUSD*S.trm)>0)html+=`<div class="pat-row"><span style="font-size:13px;color:var(--red);">Deuda tarjetas</span><span style="font-size:13px;font-weight:500;color:var(--red);">−${pv('tot',fCOP(debtCOP+debtUSD*S.trm))}</span></div>`;
         rows.innerHTML=html;
       }
       setText('h-pat-tot',pv('tot',fCOP(pat.total)));
