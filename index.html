@@ -936,14 +936,22 @@ function setSyncDot(state){
   d.title=state==='ok'?'Sincronizado':state==='busy'?'Sincronizando…':state==='err'?'Error de sync — reintentando':'Sin sesión';
 }
 
+let _syncRetries=0,_syncRetryTimer=null;
 async function syncUp(){
   if(!supaUser)return;
   setSyncDot('busy');
   try{
     const data=buildPersistPayload();
     const{error}=await supa.from('finanzas_data').upsert({user_id:supaUser.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    setSyncDot(error?'err':'ok');
-  }catch(e){setSyncDot('err');}
+    if(error)throw error;
+    _syncRetries=0;setSyncDot('ok');
+  }catch(e){
+    setSyncDot('err');
+    _syncRetries++;
+    const delay=[10,30,60][Math.min(_syncRetries-1,2)];
+    if(_syncRetryTimer)clearTimeout(_syncRetryTimer);
+    _syncRetryTimer=setTimeout(syncUp,delay*1000);
+  }
 }
 
 async function syncDown(){
