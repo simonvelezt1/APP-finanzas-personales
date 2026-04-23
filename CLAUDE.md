@@ -57,14 +57,17 @@ All functions run in **Frankfurt (fra1)** to avoid geo-blocks and keep API keys 
 - All chains queried in parallel via `Promise.allSettled`
 - Returns `{ tokens, errors: [{source, message}] }` — partial failures are reported, not dropped
 - Native tokens (ETH, BNB, AVAX, SOL, BTC) kept even when USD price is unavailable (`usd_value: 0`)
+- **Stablecoin price fallback:** `STABLECOINS` set (USDC, USDT, DAI, BUSD, TUSD, FRAX, LUSD, USDP, USDC.E, USDT.E, USDCE) — when Moralis returns `null` for `usd_price`/`usd_value`, these tokens get `usd_price: 1.0` injected. Applied to both ERC-20 and SPL tokens.
+- **Token filter:** non-native tokens kept if `usd_value > 0.01` **or** `balance >= 0.001` (catches stablecoins with missing price data)
 - CORS: restricted to the production Vercel/GitHub Pages origins
 
 #### `api/trm.js`
-- Proxies TRM (USD→COP) from 3 sources server-side (avoids client CORS issues)
+- Proxies TRM (USD→COP) from 4 sources server-side (avoids client CORS issues)
 - Returns `{ trm, date, source }` on success; `{ error, details }` on failure
-- Sources tried in order: Banco de la República → open.er-api.com → exchangerate-api.com
-- Cache: `s-maxage=3600, stale-while-revalidate=86400`
+- Sources tried in order: Banco de la República → open.er-api.com → exchangerate-api.com → fawazahmed0/currency-api (jsDelivr CDN)
+- Cache: `s-maxage=1800, stale-while-revalidate=3600` (30 min fresh, 1 hr stale)
 - No API key required
+- **Note:** Frankfurter was considered but rejected — ECB does not track COP
 
 ### Security Headers (`vercel.json`)
 
@@ -81,7 +84,7 @@ A single global object `S` holds all runtime state. It is persisted to `localSto
 
 ```js
 S = {
-  trm,            // USD→COP exchange rate (default 4200)
+  trm,            // USD→COP exchange rate (default 4350)
   trmMan,         // true if TRM was set manually
   trmDate,        // display string for TRM source/date
   trmOpen,        // UI-only toggle state for TRM edit row (not persisted)
@@ -140,7 +143,7 @@ let _toastTimer = null;   // debounce timer to prevent stacked toast notificatio
 ### TRM (Exchange Rate)
 
 `autoTRM()` fetches in order until one succeeds:
-1. **Primary:** `/api/trm` — server-side proxy (no CORS, Frankfurt, cached)
+1. **Primary:** `/api/trm?v={cacheBust}` — server-side proxy (no CORS, Frankfurt). The `v` param is a 30-minute time bucket (`Math.floor(Date.now()/1800000)`) that forces a fresh CDN response every 30 min on scheduled refreshes.
 2. **Fallback 1:** `https://www.datos.gov.co/resource/mcec-87by.json` — direct client fetch
 3. **Fallback 2:** `https://open.er-api.com/v6/latest/USD`
 4. **Fallback 3:** `https://api.exchangerate-api.com/v4/latest/USD`
@@ -242,8 +245,9 @@ No virtual DOM. Each tab has a `render*()` function that directly sets `innerHTM
 
 ### PWA / iOS
 
-- App icon: `genIcon()` first tries to load `./logo.png`; if it fails (404 or network error), falls back to a canvas-generated 180×180 green rounded square with white "MF". Result injected into `<link id="ati">` and `#appLogo`.
-- `logo.png` is committed to the repo (whitelisted in `.gitignore` via `!logo.png`) so it's available on Vercel.
+- App icon: `genIcon()` first tries to load `./logo.png`; if it fails (404 or network error), falls back to a canvas-generated 180×180 navy rounded square with white "MF". Result injected into `<link id="ati">` and `#appLogo`.
+- `logo.png` is committed to the repo (whitelisted in `.gitignore` via `!logo.png`). It is a **180×180 px PNG** cropped from the original `Logo App mis propias finanzas.png` (1536×1024) — do not re-export the original directly, always crop to square first. Source file remains PC-only per gitignore rules.
+- Logo box CSS: `.logo-box { background: #F5F4F0 }` — matches the logo's own cream background. `#appLogo { width:100%; height:100%; object-fit:cover }` fills the box edge-to-edge.
 - `theme-color` meta tags for light/dark mode.
 - `apple-mobile-web-app-status-bar-style: black-translucent` — `.topbar` uses `padding-top: calc(14px + env(safe-area-inset-top))`.
 - Inline manifest sets `display: standalone`.
@@ -270,7 +274,11 @@ finanzas_data (
 ```
 Row Level Security is enabled — users can only read/write their own row.
 
-**Auth:** Magic link (email OTP). `signInWithOtp()` sends a link; clicking it redirects to the app URL and `onAuthStateChange` fires, setting `supaUser` and calling `syncDown()`.
+**Auth:** Magic link (email OTP) using **PKCE flow** (`flowType: 'pkce'`). `signInWithOtp()` sends a link; clicking it redirects to the app URL with a `?code=` param, which the Supabase SDK exchanges automatically. `onAuthStateChange` fires, setting `supaUser` and calling `syncDown()`.
+
+**iOS PWA auth flow:** On iPhone, magic links open in Safari (not the PWA). Two mechanisms recover the session when the user returns to the PWA:
+1. `visibilitychange` listener — fires `supa.auth.getSession()` every time the PWA becomes visible while `supaUser` is null
+2. **"Ya hice clic en el link →"** button in the login overlay — calls `recheckSession()` for an immediate manual recheck
 
 **Sync flow:**
 - `persist()` → saves to `localStorage` immediately, then calls `debouncedSyncUp()` (1.5 s debounce) → `syncUp()` upserts full state to Supabase
@@ -286,12 +294,29 @@ Row Level Security is enabled — users can only read/write their own row.
 - `syncDown()` — async, fetches cloud state, overwrites `S` fields + localStorage, calls `renderAll()`, then calls `fetchPolymarket()` and `fetchCryptoWallet()` if configured
 - `debouncedSyncUp()` — 1500ms debounced wrapper called by `persist()`
 - `sendMagicLink()` — sends OTP email via `supa.auth.signInWithOtp()`
-- `doSignOut()` — signs out and shows login overlay
-- `showLogin()` / `hideLogin()` — controls `#login-overlay` visibility
+- `recheckSession()` — manually triggers `getSession()` recheck; called by the "Ya hice clic" button
+- `doSignOut()` — signs out and shows login overlay; does **not** clear the biometric credential
+- `showLogin()` / `hideLogin()` — controls `#login-overlay` visibility; `showLogin()` also shows/hides `#bio-login-sec` based on `hasBioCred()`
 
-**Login overlay** (`#login-overlay`): full-screen overlay shown when `supaUser` is null.
+**Login overlay** (`#login-overlay`): full-screen overlay shown when `supaUser` is null. Contains a biometric section (`#bio-login-sec`) shown only when a credential is registered on the device.
 
-**`resetApp()`:** resets `txs`, `invs`, `ctas`, `bud`, `cats` to empty/defaults and writes localStorage. Does **not** reset `polyWallet` or `wallets` — those survive a reset. Deletes the Supabase row to prevent cloud restore on next sync. Auth session stays active.
+**`resetApp()`:** resets `txs`, `invs`, `ctas`, `bud`, `cats` to empty/defaults and writes localStorage. Does **not** reset `polyWallet`, `wallets`, or the biometric credential — those survive a reset. Deletes the Supabase row to prevent cloud restore on next sync. Auth session stays active.
+
+### Biometric Auth (Face ID / Touch ID)
+
+Device-local authentication via the **WebAuthn API** (platform authenticator). The biometric credential is registered once per device after the first magic-link sign-in.
+
+**Key functions:**
+- `hasBioCred()` — returns `true` if `localStorage['mf_bio']` exists
+- `bioAvailable()` — async, returns `true` if `PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()` resolves true
+- `registerBiometric()` — calls `navigator.credentials.create()` with `authenticatorAttachment: 'platform'`; stores `{ id: Uint8Array, email }` in `localStorage['mf_bio']`
+- `authWithBiometric()` — calls `navigator.credentials.get()` to verify biometric; on success tries `getSession()` then `refreshSession()` to restore the Supabase session
+- `revokeBiometric()` — removes `localStorage['mf_bio']` and re-renders the settings row
+- `renderBioRow()` — renders the Activate/Revocar row in Ajustes → CUENTA (`#bio-row`); disables the button if `bioAvailable()` returns false
+
+**Storage:** `localStorage['mf_bio']` = `{ id: number[], email: string }` — the credential ID (public, non-sensitive) and email. No biometric data ever leaves the device's Secure Enclave.
+
+**Credential scope:** credentials are bound to `window.location.hostname` (the `rp.id`). A credential registered on Vercel won't work on GitHub Pages and vice versa — this is correct WebAuthn behaviour.
 
 **Operational note:** Supabase free tier pauses after 7 days of inactivity. Data is not lost — reactivate from the Supabase dashboard.
 
@@ -328,7 +353,7 @@ Displays real-time crypto token balances in **Inversiones → CRYPTO WALLET**.
 
 **Migration:** `migrateWallets(d)` converts old single-address fields (`cryptoWallet`, `btcAddress`, `solAddress`) to the `wallets[]` array format automatically on `load()` and `syncDown()`.
 
-**Token shape in `cryptoTokens[]`:** `{ name, symbol, logo, balance, chain, usd_value, walletLabel }` — `walletLabel` is injected by `fetchCryptoWallet()` from the matching entry in `S.wallets`. Native tokens are kept even when `usd_value === 0` (price feed unavailable). Non-native tokens filtered to `usd_value > 0.01`. Sorted descending by value.
+**Token shape in `cryptoTokens[]`:** `{ name, symbol, logo, balance, chain, usd_value, walletLabel }` — `walletLabel` is injected by `fetchCryptoWallet()` from the matching entry in `S.wallets`. Native tokens are kept even when `usd_value === 0` (price feed unavailable). Non-native tokens kept if `usd_value > 0.01` or `balance >= 0.001`. Sorted descending by value.
 
 **Display:** Each token shows logo, name, symbol, balance, wallet label, chain, USD value, and COP equivalent. All amounts hidden when `S.privGlobal` is true.
 
