@@ -979,6 +979,21 @@ supa.auth.onAuthStateChange((event,session)=>{
     showLogin();
   }
 });
+
+function recheckSession(){
+  supa.auth.getSession().then(({data:{session}})=>{
+    if(session?.user){supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();}
+    else{toast('Sesión no encontrada — intenta el link nuevamente');}
+  });
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&!supaUser){
+    supa.auth.getSession().then(({data:{session}})=>{
+      if(session?.user){supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();}
+    });
+  }
+});
 // ─────────────────────────────────────────────────────────────────
 
 function genIcon(){
