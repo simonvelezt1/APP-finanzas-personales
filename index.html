@@ -1491,6 +1491,9 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(session?.user){supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();}
     else{showLogin();}
   });
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('SW:',e));
+  }
 });
 </script>
 </body>
