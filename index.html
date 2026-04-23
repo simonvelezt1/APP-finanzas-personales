@@ -1238,7 +1238,7 @@ function selBW(w){S.bWal=w;$e('bwc').classList.toggle('active',w==='COP');$e('bw
 function selIW(w){S.iWal=w;$e('iwc').classList.toggle('active',w==='COP');$e('iwu').classList.toggle('active',w==='USD');}
 function selCW(w){S.cWal=w;$e('cw-cop').classList.toggle('active',w==='COP');$e('cw-usd').classList.toggle('active',w==='USD');}
 function selCat(id){S.cat=id;renderCG();}
-function chM(d){S.vm+=d;if(S.vm<0){S.vm=11;S.vy--;}if(S.vm>11){S.vm=0;S.vy++;}const ts=$e('txSearch');if(ts)ts.value='';renderHist();}
+function chM(d){S.vm+=d;if(S.vm<0){S.vm=11;S.vy--;}if(S.vm>11){S.vm=0;S.vy++;}S._uiFilters.txSearch='';const ts=$e('txSearch');if(ts)ts.value='';renderHist();}
 function chMB(d){S.bm+=d;if(S.bm<0){S.bm=11;S.by--;}if(S.bm>11){S.bm=0;S.by++;}renderBProg();}
 function calcPat(){
   const ctasCOP=S.ctas.reduce((a,c)=>{const v=toCOP(c.saldo,c.wal);return a+(c.tipo==='credito'?-v:v);},0);
