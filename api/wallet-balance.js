@@ -34,6 +34,24 @@ const NATIVE = {
 // Stablecoins always pegged to $1 — use fallback price when Moralis returns null
 const STABLECOINS = new Set(['USDC','USDT','DAI','BUSD','TUSD','FRAX','LUSD','USDP','USDC.E','USDT.E','USDCE']);
 
+// Binance pairs for EVM native tokens — fallback when Moralis returns null price
+const CHAIN_BINANCE_PAIR = {
+  eth: 'ETHUSDT', base: 'ETHUSDT',
+  polygon: 'POLUSDT', bsc: 'BNBUSDT', avalanche: 'AVAXUSDT',
+};
+
+async function getNativePrice(chain) {
+  const pair = CHAIN_BINANCE_PAIR[chain];
+  if (!pair) return null;
+  try {
+    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`,
+      { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return parseFloat(j.price) || null;
+  } catch { return null; }
+}
+
 // ── EVM (Ethereum, Polygon, BNB, Base, Avalanche) ──────────────────────────
 
 async function moralisEVM(path, chain) {
@@ -55,13 +73,14 @@ async function getEVMBalances(address, chain) {
   const nativeInfo = NATIVE[chain] || { symbol: chain.toUpperCase(), name: chain, decimals: 18 };
   const nativeBal = parseFloat(nativeRaw.balance || '0') / 10 ** nativeInfo.decimals;
 
-  // Keep native tokens even without USD price — show balance with usd_value: 0
+  // Keep native tokens; use Binance as fallback when Moralis returns no price
   if (nativeBal > 0.000001) {
-    const usdPrice = nativeRaw.usd_price || null;
+    let usdPrice = nativeRaw.usd_price != null ? parseFloat(nativeRaw.usd_price) : null;
+    if (usdPrice === null) usdPrice = await getNativePrice(chain);
     results.push({
       symbol: nativeInfo.symbol, name: nativeInfo.name, balance: nativeBal,
       usd_price: usdPrice,
-      usd_value: nativeBal * (usdPrice || 0),
+      usd_value: nativeBal * (usdPrice ?? 0),
       logo: null, native: true, chain,
     });
   }
