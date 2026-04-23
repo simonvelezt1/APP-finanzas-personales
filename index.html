@@ -692,9 +692,9 @@ body{
     </div>
     <div class="ig" style="margin-bottom:10px;"><input class="inp" type="search" id="txSearch" placeholder="Buscar descripción o categoría..." oninput="S._uiFilters.txSearch=this.value;renderHist()" style="font-size:13px;padding:10px 14px;"/></div>
     <div class="frow">
-      <select class="fsel" id="fw" onchange="renderHist()"><option value="">Carteras</option><option value="COP">COP</option><option value="USD">USD</option></select>
-      <select class="fsel" id="fc" onchange="renderHist()"></select>
-      <select class="fsel" id="ft" onchange="renderHist()"><option value="">Todo</option><option value="gasto">Gastos</option><option value="ingreso">Ingresos</option></select>
+      <select class="fsel" id="fw" onchange="S._uiFilters.fw=this.value;renderHist()"><option value="">Carteras</option><option value="COP">COP</option><option value="USD">USD</option></select>
+      <select class="fsel" id="fc" onchange="S._uiFilters.fc=this.value;renderHist()"></select>
+      <select class="fsel" id="ft" onchange="S._uiFilters.ft=this.value;renderHist()"><option value="">Todo</option><option value="gasto">Gastos</option><option value="ingreso">Ingresos</option></select>
     </div>
     <div class="card" id="hist"><div class="empty">Sin movimientos</div></div>
   </div>
