@@ -1071,9 +1071,15 @@ async function authWithBiometric(){
       userVerification:'required',timeout:60000,
     }});
     const{data:{session}}=await supa.auth.getSession();
-    if(session?.user){supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();return;}
+    if(session?.user){
+      if(bio.email&&session.user.email!==bio.email){await supa.auth.signOut();toast('Sesión de otro usuario — ingresa con email');return;}
+      supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();return;
+    }
     const{data}=await supa.auth.refreshSession();
-    if(data?.user){supaUser=data.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();return;}
+    if(data?.user){
+      if(bio.email&&data.user.email!==bio.email){await supa.auth.signOut();toast('Sesión de otro usuario — ingresa con email');return;}
+      supaUser=data.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();return;
+    }
     toast('Sesión expirada — ingresa con tu email');
   }catch(e){if(e.name!=='NotAllowedError')toast('Error: '+e.message);}
 }
