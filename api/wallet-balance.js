@@ -31,6 +31,9 @@ const NATIVE = {
   avalanche:{ symbol: 'AVAX', name: 'Avalanche', decimals: 18 },
 };
 
+// Stablecoins always pegged to $1 — use fallback price when Moralis returns null
+const STABLECOINS = new Set(['USDC','USDT','DAI','BUSD','TUSD','FRAX','LUSD','USDP','USDC.E','USDT.E','USDCE']);
+
 // ── EVM (Ethereum, Polygon, BNB, Base, Avalanche) ──────────────────────────
 
 async function moralisEVM(path, chain) {
@@ -65,10 +68,12 @@ async function getEVMBalances(address, chain) {
   for (const t of (tokensRaw || [])) {
     const bal = parseFloat(t.balance || '0') / 10 ** (t.decimals || 18);
     if (bal < 0.000001) continue;
-    const usdVal = t.usd_value != null ? parseFloat(t.usd_value) : bal * (parseFloat(t.usd_price) || 0);
+    const isStable = STABLECOINS.has((t.symbol || '').toUpperCase());
+    const effectivePrice = t.usd_price != null ? parseFloat(t.usd_price) : (isStable ? 1.0 : 0);
+    const usdVal = t.usd_value != null ? parseFloat(t.usd_value) : bal * effectivePrice;
     results.push({
       symbol: t.symbol || '?', name: t.name || t.symbol || '?', balance: bal,
-      usd_price: t.usd_price != null ? parseFloat(t.usd_price) : null,
+      usd_price: t.usd_price != null ? parseFloat(t.usd_price) : (isStable ? 1.0 : null),
       usd_value: usdVal, logo: t.logo || t.thumbnail || null, native: false, chain,
     });
   }
@@ -141,11 +146,13 @@ async function getSolanaBalances(address) {
   for (const t of (splData || [])) {
     const bal = parseFloat(t.amount || 0);
     if (bal < 0.000001) continue;
-    const usdVal = parseFloat(t.usd_value || 0);
-    if (usdVal < 0.01) continue;
+    const isStable = STABLECOINS.has((t.symbol || '').toUpperCase());
+    const rawUsdVal = parseFloat(t.usd_value || 0);
+    const usdVal = rawUsdVal > 0 ? rawUsdVal : (isStable ? bal : 0);
+    if (usdVal < 0.01 && bal < 0.001) continue;
     results.push({
       symbol: t.symbol || '?', name: t.name || t.symbol || '?', balance: bal,
-      usd_price: usdVal > 0 && bal > 0 ? usdVal / bal : null,
+      usd_price: usdVal > 0 && bal > 0 ? usdVal / bal : (isStable ? 1.0 : null),
       usd_value: usdVal,
       logo: t.logo || null, native: false, chain: 'solana',
     });
@@ -217,8 +224,8 @@ export default async function handler(req, res) {
   const tokens = results
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value)
-    // Show native tokens even with 0 USD value; filter non-native by value
-    .filter(t => t.native ? t.balance > 0.000001 : t.usd_value > 0.01)
+    // Show native tokens even with 0 USD value; keep non-native by value or significant balance
+    .filter(t => t.native ? t.balance > 0.000001 : (t.usd_value > 0.01 || t.balance >= 0.001))
     .sort((a, b) => b.usd_value - a.usd_value);
 
   const errors = results

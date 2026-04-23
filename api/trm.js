@@ -63,13 +63,24 @@ export default async function handler(req, res) {
       if (!v || v < 100) throw new Error('Valor inválido');
       return { trm: v, date: d.date || new Date().toISOString().split('T')[0], source: 'exchangerate-api.com' };
     },
+    // 4. Frankfurter (ECB / central bank rates) — no key needed
+    async () => {
+      const r = await fetch('https://api.frankfurter.dev/latest?from=USD&to=COP', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!r.ok) throw new Error(`frankfurter ${r.status}`);
+      const d = await r.json();
+      const v = d.rates?.COP;
+      if (!v || v < 100) throw new Error('Valor inválido');
+      return { trm: v, date: d.date || new Date().toISOString().split('T')[0], source: 'frankfurter.dev' };
+    },
   ];
 
   const errors = [];
   for (const src of sources) {
     try {
       const result = await src();
-      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
+      res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
       return res.status(200).json(result);
     } catch (e) {
       errors.push(e.message);
