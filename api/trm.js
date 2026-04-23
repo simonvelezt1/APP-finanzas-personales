@@ -63,16 +63,16 @@ export default async function handler(req, res) {
       if (!v || v < 100) throw new Error('Valor inválido');
       return { trm: v, date: d.date || new Date().toISOString().split('T')[0], source: 'exchangerate-api.com' };
     },
-    // 4. Frankfurter (ECB / central bank rates) — no key needed
+    // 4. fawazahmed0 currency-api (jsDelivr CDN, no key, supports COP)
     async () => {
-      const r = await fetch('https://api.frankfurter.dev/latest?from=USD&to=COP', {
+      const r = await fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/usd/cop.json', {
         signal: AbortSignal.timeout(5000),
       });
-      if (!r.ok) throw new Error(`frankfurter ${r.status}`);
+      if (!r.ok) throw new Error(`currency-api ${r.status}`);
       const d = await r.json();
-      const v = d.rates?.COP;
+      const v = d.cop;
       if (!v || v < 100) throw new Error('Valor inválido');
-      return { trm: v, date: d.date || new Date().toISOString().split('T')[0], source: 'frankfurter.dev' };
+      return { trm: v, date: d.date || new Date().toISOString().split('T')[0], source: 'currency-api' };
     },
   ];
 
