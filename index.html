@@ -1387,7 +1387,25 @@ function _applyCtaImpact(tc,monto,walTx,tipo){
   if(tipo==='ingreso'){tc.saldo+=isCredit?-amt:amt;}else{tc.saldo+=isCredit?amt:-amt;}
 }
 function reg(){const monto=parseFloat($e('monto')?.value);if(!monto||monto<=0){toast('Ingresa un monto válido');return;}if(S.tipo==='gasto'&&!S.cat){toast('Selecciona una categoría');return;}const fecha=$e('mfecha')?.value||new Date().toISOString().split('T')[0];const ctaSelVal=$e('ctaSel')?.value||'';const rawId=ctaSelVal&&ctaSelVal!=='__new__'?ctaSelVal:null;const ctaId=rawId?(parseInt(rawId,10)||rawId):null;if(ctaId){const tc=S.ctas.find(c=>c.id===ctaId);if(tc)_applyCtaImpact(tc,monto,S.wal,S.tipo);}S.txs.push({id:crypto.randomUUID(),tipo:S.tipo,wal:S.wal,cat:S.tipo==='gasto'?S.cat:'_ing',monto,desc:($e('mdesc')?.value||'').trim(),fecha,ctaId});persist();const m=$e('monto');if(m)m.value='';const md=$e('mdesc');if(md)md.value='';const cs=$e('ctaSel');if(cs)cs.value='';S.cat=null;toast(S.tipo==='gasto'?(ctaId?'Gasto registrado y descontado de la cuenta ✓':'Gasto registrado ✓'):(ctaId?'Ingreso registrado en cuenta ✓':'Ingreso registrado ✓'));renderAll();}
-function delTx(id){const t=S.txs.find(x=>x.id===id);if(t&&t.ctaId){const ca=S.ctas.find(c=>c.id===t.ctaId);if(ca)_applyCtaImpact(ca,t.monto,t.wal,t.tipo==='ingreso'?'gasto':'ingreso');}S.txs=S.txs.filter(x=>x.id!==id);persist();renderAll();}
+let _undoTx=null;
+function delTx(id){
+  const t=S.txs.find(x=>x.id===id);if(!t)return;
+  const backup=JSON.parse(JSON.stringify(t));
+  let prevSaldo=null;
+  if(t.ctaId){const ca=S.ctas.find(c=>c.id===t.ctaId);if(ca){prevSaldo={id:ca.id,saldo:ca.saldo};_applyCtaImpact(ca,t.monto,t.wal,t.tipo==='ingreso'?'gasto':'ingreso');}}
+  S.txs=S.txs.filter(x=>x.id!==id);persist();renderAll();
+  _undoTx={tx:backup,prevSaldo};
+  const el=$e('toast');
+  el.innerHTML='Eliminada <button onclick="undoDelTx()" style="margin-left:10px;padding:2px 8px;background:#fff;color:#1a2b4a;border:none;border-radius:3px;cursor:pointer;font-size:11px;font-weight:600;">Deshacer</button>';
+  el.classList.add('on');clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{el.classList.remove('on');_undoTx=null;},5000);
+}
+function undoDelTx(){
+  if(!_undoTx)return;
+  S.txs.push(_undoTx.tx);
+  if(_undoTx.prevSaldo){const ca=S.ctas.find(c=>c.id===_undoTx.prevSaldo.id);if(ca)ca.saldo=_undoTx.prevSaldo.saldo;}
+  _undoTx=null;persist();renderAll();toast('Transacción restaurada ✓');
+}
 function addInv(){
   const nom=($e('inom')?.value||'').trim();
   const costStr=$e('icost')?.value||'';
