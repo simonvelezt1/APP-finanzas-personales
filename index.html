@@ -1026,7 +1026,7 @@ const TI={ahorros:'🏦',corriente:'💳',cdt:'📈',digital:'📱',efectivo:'�
 const TL={ahorros:'Ahorros',corriente:'Corriente',cdt:'CDT',digital:'Digital',efectivo:'Efectivo',credito:'Tarjeta Crédito',otro:'Otro'};
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-let S={trm:4200,trmMan:false,trmDate:'',trmOpen:false,txs:[],invs:[],ctas:[],cats:[...DC],bud:{general:0,COP:{},USD:{}},cat:null,wal:'COP',tipo:'gasto',bWal:'COP',iWal:'COP',cWal:'COP',editCta:null,vm:new Date().getMonth(),vy:new Date().getFullYear(),bm:new Date().getMonth(),by:new Date().getFullYear(),privGlobal:false,priv:{},polyWallet:'',wallets:[]};
+let S={trm:4350,trmMan:false,trmDate:'',trmOpen:false,txs:[],invs:[],ctas:[],cats:[...DC],bud:{general:0,COP:{},USD:{}},cat:null,wal:'COP',tipo:'gasto',bWal:'COP',iWal:'COP',cWal:'COP',editCta:null,vm:new Date().getMonth(),vy:new Date().getFullYear(),bm:new Date().getMonth(),by:new Date().getFullYear(),privGlobal:false,priv:{},polyWallet:'',wallets:[]};
 let polyPositions=[];let polyLoading=false;
 let cryptoTokens=[];let cryptoLoading=false;
 function persist(){localStorage.setItem('mf_v1',JSON.stringify({txs:S.txs,invs:S.invs,ctas:S.ctas,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:S.privGlobal,priv:S.priv,polyWallet:S.polyWallet,wallets:S.wallets}));debouncedSyncUp();}
