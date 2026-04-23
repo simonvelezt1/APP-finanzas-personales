@@ -963,7 +963,10 @@ async function doSignOut(){
   toast('Sesión cerrada');
 }
 
-function showLogin(){const lo=$e('login-overlay');if(lo)lo.style.display='flex';}
+function showLogin(){
+  const lo=$e('login-overlay');if(lo)lo.style.display='flex';
+  const bs=$e('bio-login-sec');if(bs)bs.style.display=hasBioCred()?'flex':'none';
+}
 function hideLogin(){const lo=$e('login-overlay');if(lo)lo.style.display='none';}
 
 supa.auth.onAuthStateChange((event,session)=>{
