@@ -932,8 +932,8 @@ let _syncTimer=null;
 
 function setSyncDot(state){
   const d=$e('sync-dot');if(!d)return;
-  d.style.background=state==='ok'?'var(--bar-green)':state==='busy'?'var(--bar-amber)':'var(--text-muted)';
-  d.title=state==='ok'?'Sincronizado':state==='busy'?'Sincronizando…':'Sin sesión';
+  d.style.background=state==='ok'?'var(--bar-green)':state==='busy'?'var(--bar-amber)':state==='err'?'var(--bar-red)':'var(--text-muted)';
+  d.title=state==='ok'?'Sincronizado':state==='busy'?'Sincronizando…':state==='err'?'Error de sync — reintentando':'Sin sesión';
 }
 
 async function syncUp(){
