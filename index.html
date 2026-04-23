@@ -1365,7 +1365,8 @@ function expXL(){if(typeof XLSX==='undefined'){toast('Librería no disponible');
 async function resetApp(){
   if(!confirm('¿Seguro? Todos los datos se eliminarán en este dispositivo y en la nube.'))return;
   S.txs=[];S.invs=[];S.ctas=[];S.bud={general:0,COP:{},USD:{}};S.cats=[...DC];
-  localStorage.setItem('mf_v1',JSON.stringify({txs:[],invs:[],ctas:[],cats:[...DC],bud:{general:0,COP:{},USD:{}},trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:false,priv:{},polyWallet:S.polyWallet,wallets:S.wallets}));
+  S.privGlobal=false;S.priv={};
+  localStorage.setItem('mf_v1',JSON.stringify(buildPersistPayload()));
   if(supaUser){
     try{await supa.from('finanzas_data').delete().eq('user_id',supaUser.id);}catch(e){}
   }
