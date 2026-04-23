@@ -958,7 +958,10 @@ async function syncDown(){
       S.bud=d.bud||{general:0,COP:{},USD:{}};
       if(d.trm>100){S.trm=d.trm;S.trmMan=!!d.trmMan;S.trmDate=d.trmDate||'';}
       S.privGlobal=d.privGlobal||false;S.priv=d.priv||{};S.polyWallet=d.polyWallet||'';S.wallets=migrateWallets(d);
-      S.txs.forEach(t=>{if(t.ctaId===undefined)t.ctaId=null;});
+      S.txs.forEach(t=>{if(t.ctaId===undefined)t.ctaId=null;if(typeof t.id==='number')t.id=String(t.id);});
+      S.ctas.forEach(c=>{if(typeof c.id==='number')c.id=String(c.id);});
+      S.invs.forEach(inv=>{if(typeof inv.id==='number')inv.id=String(inv.id);});
+      S.wallets.forEach(w=>{if(typeof w.id==='number')w.id=String(w.id);});
       localStorage.setItem('mf_v1',JSON.stringify(buildPersistPayload()));
       renderAll();
       if(S.polyWallet)fetchPolymarket();
