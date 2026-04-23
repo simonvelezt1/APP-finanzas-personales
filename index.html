@@ -986,6 +986,60 @@ function recheckSession(){
   });
 }
 
+// ── Biometric auth (Face ID / Touch ID via WebAuthn) ─────────────
+function hasBioCred(){return!!localStorage.getItem('mf_bio');}
+
+async function bioAvailable(){
+  try{return!!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());}
+  catch(e){return false;}
+}
+
+async function registerBiometric(){
+  if(!supaUser){toast('Inicia sesión primero');return;}
+  try{
+    const cred=await navigator.credentials.create({publicKey:{
+      challenge:crypto.getRandomValues(new Uint8Array(32)),
+      rp:{name:'Mis Finanzas',id:window.location.hostname},
+      user:{id:new TextEncoder().encode(supaUser.id.substring(0,32)),name:supaUser.email,displayName:'Mis Finanzas'},
+      pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},
+      timeout:60000,
+    }});
+    localStorage.setItem('mf_bio',JSON.stringify({id:Array.from(new Uint8Array(cred.rawId)),email:supaUser.email}));
+    renderBioRow();
+    toast('Face ID / Touch ID activado ✓');
+  }catch(e){if(e.name!=='NotAllowedError')toast('No se pudo activar: '+e.message);}
+}
+
+async function authWithBiometric(){
+  const bio=JSON.parse(localStorage.getItem('mf_bio')||'null');
+  if(!bio)return;
+  try{
+    await navigator.credentials.get({publicKey:{
+      challenge:crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials:[{id:new Uint8Array(bio.id),type:'public-key'}],
+      userVerification:'required',timeout:60000,
+    }});
+    const{data:{session}}=await supa.auth.getSession();
+    if(session?.user){supaUser=session.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();return;}
+    const{data}=await supa.auth.refreshSession();
+    if(data?.user){supaUser=data.user;hideLogin();setText('aj-email',supaUser.email||'—');setSyncDot('busy');syncDown();return;}
+    toast('Sesión expirada — ingresa con tu email');
+  }catch(e){if(e.name!=='NotAllowedError')toast('Error: '+e.message);}
+}
+
+function revokeBiometric(){localStorage.removeItem('mf_bio');renderBioRow();toast('Biometría desactivada');}
+
+function renderBioRow(){
+  const el=$e('bio-row');if(!el)return;
+  const has=hasBioCred();
+  el.innerHTML=has
+    ?`<div class="srow-ico">🔐</div><div class="srow-body"><div class="srow-title">Face ID / Touch ID</div><div class="srow-sub">Acceso biométrico activado</div></div><button class="srow-action danger" onclick="revokeBiometric()">Revocar</button>`
+    :`<div class="srow-ico">🔐</div><div class="srow-body"><div class="srow-title">Face ID / Touch ID</div><div class="srow-sub">Acceso rápido sin email en este dispositivo</div></div><button id="bio-activate-btn" class="srow-action primary" onclick="registerBiometric()">Activar</button>`;
+  const btn=$e('bio-activate-btn');
+  if(btn)bioAvailable().then(ok=>{if(!ok)btn.disabled=true;});
+}
+
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&!supaUser){
     supa.auth.getSession().then(({data:{session}})=>{
