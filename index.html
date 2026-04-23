@@ -1385,7 +1385,7 @@ function addInv(){
   if(!nom||costStr===''||valStr===''){toast('Completa todos los campos');return;}
   const cost=parseFloat(costStr),val=parseFloat(valStr);
   if(isNaN(cost)||isNaN(val)||cost<0||val<0){toast('Valores inválidos');return;}
-  S.invs.push({id:Date.now(),nom,wal:S.iWal,cost,val});
+  S.invs.push({id:crypto.randomUUID(),nom,wal:S.iWal,cost,val});
   persist();
   ['inom','icost','ival'].forEach(id=>{const e=$e(id);if(e)e.value='';});
   toast('Inversión agregada ✓');
