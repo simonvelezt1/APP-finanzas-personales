@@ -936,7 +936,7 @@ async function syncDown(){
       if(d.trm>100){S.trm=d.trm;S.trmMan=!!d.trmMan;S.trmDate=d.trmDate||'';}
       S.privGlobal=d.privGlobal||false;S.priv=d.priv||{};S.polyWallet=d.polyWallet||'';S.wallets=migrateWallets(d);
       S.txs.forEach(t=>{if(t.ctaId===undefined)t.ctaId=null;});
-      localStorage.setItem('mf_v1',JSON.stringify({txs:S.txs,invs:S.invs,ctas:S.ctas,cats:S.cats,bud:S.bud,trm:S.trm,trmMan:S.trmMan,trmDate:S.trmDate,privGlobal:S.privGlobal,priv:S.priv,polyWallet:S.polyWallet,wallets:S.wallets}));
+      localStorage.setItem('mf_v1',JSON.stringify(buildPersistPayload()));
       renderAll();
       if(S.polyWallet)fetchPolymarket();
       if(S.wallets.length)fetchCryptoWallet();
