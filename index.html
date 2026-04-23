@@ -975,10 +975,29 @@ function debouncedSyncUp(){
 async function sendMagicLink(){
   const email=($e('login-email')?.value||'').trim();
   if(!email){toast('Ingresa tu email');return;}
-  const{error}=await supa.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin}});
+  const{error}=await supa.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:window.location.origin}});
   if(error){toast('Error: '+error.message);return;}
+  $e('login-email').style.display='none';
+  $e('login-send-btn').style.display='none';
   const sent=$e('login-sent');if(sent)sent.style.display='block';
-  toast('Link enviado ✓');
+  setTimeout(()=>$e('login-otp')?.focus(),100);
+  toast('Código enviado ✓');
+}
+
+async function verifyOtp(){
+  const email=($e('login-email')?.value||'').trim();
+  const token=($e('login-otp')?.value||'').trim();
+  if(!/^\d{6}$/.test(token)){toast('Ingresa los 6 dígitos');return;}
+  const{error}=await supa.auth.verifyOtp({email,token,type:'email'});
+  if(error){toast('Código inválido o expirado');return;}
+  // onAuthStateChange fires automatically and calls hideLogin()
+}
+
+function backToEmail(){
+  $e('login-sent').style.display='none';
+  $e('login-email').style.display='';
+  $e('login-send-btn').style.display='';
+  $e('login-otp').value='';
 }
 
 async function doSignOut(){
