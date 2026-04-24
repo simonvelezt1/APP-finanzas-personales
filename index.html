@@ -998,7 +998,7 @@ async function sendMagicLink(){
 async function verifyOtp(){
   const email=($e('login-email')?.value||'').trim();
   const token=($e('login-otp')?.value||'').trim();
-  if(!/^\d{6}$/.test(token)){toast('Ingresa los 6 dígitos');return;}
+  if(!/^\d{6,8}$/.test(token)){toast('Ingresa el código completo');return;}
   const{error}=await supa.auth.verifyOtp({email,token,type:'email'});
   if(error){toast('Código inválido o expirado');return;}
   // onAuthStateChange fires automatically and calls hideLogin()
