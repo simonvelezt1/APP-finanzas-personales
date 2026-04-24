@@ -4,7 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mis Finanzas** — A personal finance management app for a Colombian user. Single self-contained `index.html` file with no build step, no dependencies, and no framework. Everything (HTML, CSS, JS) lives in one file. Serverless API functions live in `api/`.
+**Mis Finanzas** — A personal finance management app for a Colombian user. Single self-contained `index.html` file with no build step, no dependencies, and no framework. Everything (HTML, CSS, JS) lives in one file. Serverless API functions live in `api/`. A service worker (`sw.js`) enables offline support.
+
+## Pending Work
+
+All 5 phases of the improvement plan are complete. No pending mandatory work.
+
+**Fase 5** (optional modular refactor — splits single HTML into multiple JS/CSS files, ~6-10h) is deferred indefinitely. Requires 48h in prod without regressions as a prerequisite.
 
 ## Deployment
 
@@ -14,13 +20,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Any edit to `index.html` auto-commits and pushes to GitHub via a PostToolUse hook (`.claude/settings.json`). Vercel and GitHub Pages both auto-deploy on push. `vercel.json` sets `Cache-Control: no-cache` on the HTML so browsers always fetch the latest version.
 
-**Sync rule:** GitHub, Vercel and Supabase must always be in sync. `index.html` edits auto-push via the PostToolUse hook. Changes to other **tracked** files (e.g. `vercel.json`, `CLAUDE.md`, `api/*.js`) must be committed and pushed manually: `git add <file> && git commit && git push`.
+**Sync rule:** GitHub, Vercel and Supabase must always be in sync. `index.html` edits auto-push via the PostToolUse hook. Changes to other **tracked** files (e.g. `vercel.json`, `CLAUDE.md`, `api/*.js`, `sw.js`) must be committed and pushed manually: `git add <file> && git commit && git push`.
 
 ## What lives where
 
 | File | GitHub | PC only | Why |
 |---|---|---|---|
 | `index.html` | ✅ auto-push | | The app |
+| `sw.js` | ✅ manual push | | Service worker for offline support |
 | `api/polymarket.js` | ✅ manual push | | Vercel proxy for Polymarket |
 | `api/wallet-balance.js` | ✅ manual push | | Vercel proxy for Moralis/BTC/SOL |
 | `api/trm.js` | ✅ manual push | | Vercel proxy for TRM (server-side, avoids CORS) |
@@ -35,7 +42,7 @@ Any edit to `index.html` auto-commits and pushes to GitHub via a PostToolUse hoo
 
 ## Architecture
 
-The app is `index.html` + three Vercel API proxy functions in `api/`. There is no build process.
+The app is `index.html` + three Vercel API proxy functions in `api/` + a service worker `sw.js`. There is no build process.
 
 ### Vercel API Functions
 
@@ -56,7 +63,7 @@ All functions run in **Frankfurt (fra1)** to avoid geo-blocks and keep API keys 
 - Supports Solana + SPL tokens via Moralis Solana gateway (same key)
 - All chains queried in parallel via `Promise.allSettled`
 - Returns `{ tokens, errors: [{source, message}] }` — partial failures are reported, not dropped
-- Native tokens (ETH, BNB, AVAX, SOL, BTC) kept even when USD price is unavailable (`usd_value: 0`)
+- **EVM native price fallback:** `CHAIN_BINANCE_PAIR` maps each chain to its Binance XXUSDT pair. When Moralis returns `null` for `usd_price` on a native token (ETH, BNB, POL, AVAX), `getNativePrice(chain)` fetches from Binance with a 3s timeout. BTC and SOL already used Binance directly.
 - **Stablecoin price fallback:** `STABLECOINS` set (USDC, USDT, DAI, BUSD, TUSD, FRAX, LUSD, USDP, USDC.E, USDT.E, USDCE) — when Moralis returns `null` for `usd_price`/`usd_value`, these tokens get `usd_price: 1.0` injected. Applied to both ERC-20 and SPL tokens.
 - **Token filter:** non-native tokens kept if `usd_value > 0.01` **or** `balance >= 0.001` (catches stablecoins with missing price data)
 - CORS: restricted to the production Vercel/GitHub Pages origins
@@ -69,14 +76,27 @@ All functions run in **Frankfurt (fra1)** to avoid geo-blocks and keep API keys 
 - No API key required
 - **Note:** Frankfurter was considered but rejected — ECB does not track COP
 
-### Security Headers (`vercel.json`)
+### Security Headers
 
-Applied to all routes via `vercel.json`:
+**`vercel.json`** (applies to Vercel deployment):
 - `Content-Security-Policy` — restricts scripts, images, connect sources to known-good origins
 - `X-Frame-Options: DENY` — blocks clickjacking
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+**CSP `<meta>` tag** (applies to GitHub Pages where vercel.json has no effect):
+- Allows `script-src`: self + cdn.jsdelivr.net + cdnjs.cloudflare.com + `'unsafe-inline'` (needed for inline `<script>` block)
+- `connect-src`: self + Supabase (http+wss) + datos.gov.co + open.er-api.com + api.exchangerate-api.com
+- `object-src 'none'`; `base-uri 'self'`
+
+### Service Worker (`sw.js`)
+
+Registered in `DOMContentLoaded`. Provides offline support:
+- **Install:** caches `['/', '/index.html', '/logo.png']`
+- **Activate:** deletes old cache versions; claims clients immediately
+- **Fetch:** navigation requests → network-first with cache fallback; other GET requests → cache-first
+- Cache name: `mf-v1` — bump to `mf-v2` when breaking changes require a fresh cache
 
 ### State
 
@@ -100,7 +120,18 @@ S = {
   priv: {},       // per-widget privacy: { tot, cash, gm, bal, sav, topcat } → boolean
   polyWallet,     // string — Polymarket proxy wallet address (0x...)
   wallets[],      // crypto wallets: { id, type, label, address, chains[] }
+  _uiFilters,     // NOT persisted — { fw, fc, ft, txSearch } filter state for Movimientos
 }
+```
+
+**`_uiFilters`** is not in `PERSIST_KEYS` and is never written to localStorage or Supabase. `renderHist()` reads from it; the HTML inputs write to it on change. `chM()` clears `_uiFilters.txSearch` on month navigation.
+
+**Entity IDs** use `crypto.randomUUID()` for all new entities (transactions, accounts, investments, wallets, categories). Existing data with numeric `Date.now()` IDs is migrated to strings automatically in `load()` and `syncDown()`. All `onclick` attributes that pass IDs quote them as strings: `onclick="delTx('${t.id}')"`.
+
+**`PERSIST_KEYS` and `buildPersistPayload()`:** a single source of truth for what gets written to localStorage and Supabase. Adding a new persisted field requires only adding it to `PERSIST_KEYS`. Never manually construct the payload object in `syncUp`, `syncDown`, `persist`, or `resetApp` — always call `buildPersistPayload()`.
+
+```js
+const PERSIST_KEYS = ['txs','invs','ctas','cats','bud','trm','trmMan','trmDate','privGlobal','priv','polyWallet','wallets'];
 ```
 
 **`ctas[]` schema:** `{ id, nom, banco, tipo, wal, saldo, cupo? }`
@@ -108,23 +139,24 @@ S = {
 - For `tipo === 'credito'` (credit card): `saldo` represents **debt owed** (positive = more debt). `cupo` (optional) is the credit limit.
 - Credit cards are **liabilities** — they subtract from Total de Activos in `calcPat()`
 
-**`wallets[]` schema:** `{ id: number, type: 'evm'|'btc'|'sol', label: string, address: string, chains: string[] }`
+**`wallets[]` schema:** `{ id: string, type: 'evm'|'btc'|'sol', label: string, address: string, chains: string[] }`
 - `chains` only meaningful for `type === 'evm'`; empty array for BTC/SOL
 - `migrateWallets(d)` auto-converts old format (`cryptoWallet`, `btcAddress`, `solAddress`) to `wallets[]` on load/syncDown
 
-`persist()` saves all fields above (except `trmOpen` and `editCta`) to `localStorage` and calls `debouncedSyncUp()`. The `localStorage` format and the Supabase payload must always match — add new fields to both simultaneously.
-
-`ctaId` on transactions is `null` for unlinked entries or old data. The migration `txs.forEach(t => { if(t.ctaId===undefined) t.ctaId=null })` runs in both `load()` and `syncDown()` — intentional so the fix applies regardless of which source loads the data.
+`ctaId` on transactions is `null` for unlinked entries or old data. The migration `txs.forEach(t => { if(t.ctaId===undefined) t.ctaId=null })` runs in both `load()` and `syncDown()`.
 
 ### Module-level variables (not in S)
 
 ```js
-let polyPositions = [];   // fetched Polymarket positions (in-memory, not persisted)
+let polyPositions = [];     // fetched Polymarket positions (in-memory, not persisted)
 let polyLoading = false;
-let cryptoTokens = [];    // fetched crypto wallet tokens (in-memory, not persisted)
+let cryptoTokens = [];      // fetched crypto wallet tokens (in-memory, not persisted)
 let cryptoLoading = false;
-let _editId = null;       // id of transaction open in edit modal (null when closed)
-let _toastTimer = null;   // debounce timer to prevent stacked toast notifications
+let _editId = null;         // id of transaction open in edit modal (null when closed)
+let _toastTimer = null;     // debounce timer to prevent stacked toast notifications
+let _undoTx = null;         // backup for the last deleted transaction (cleared after 5s or undo)
+let _syncRetries = 0;       // consecutive syncUp failure count (reset on success)
+let _syncRetryTimer = null; // handle for pending syncUp retry timeout
 ```
 
 ### Key Financial Formulas
@@ -139,6 +171,8 @@ let _toastTimer = null;   // debounce timer to prevent stacked toast notificatio
 ### XSS Safety
 
 `esc(s)` escapes `& < > " '` before any user-controlled string is interpolated into `innerHTML`. All render functions that build HTML from `S` data (account names, descriptions, category names, wallet labels) must use `esc()`. Never interpolate raw user strings directly into template literals used with `.innerHTML`.
+
+Entity IDs in `onclick` attributes must always be quoted: `onclick="delTx('${t.id}')"` — required because UUIDs contain hyphens which are invalid as bare JS expressions.
 
 ### TRM (Exchange Rate)
 
@@ -171,7 +205,7 @@ All balance updates go through `_applyCtaImpact(tc, monto, walTx, tipo)`:
 | ingreso | `saldo += amt` | `saldo -= amt` (pago reduce deuda) |
 | gasto | `saldo -= amt` | `saldo += amt` (gasto aumenta deuda) |
 
-`delTx(id)` reverses the impact by calling `_applyCtaImpact` with the opposite `tipo`. `saveEditTx()` reverses the original impact then applies the new one.
+`delTx(id)` reverses the impact before removing the transaction. It also stores a backup in `_undoTx` and shows a 5-second toast with a **Deshacer** button. `undoDelTx()` restores both the transaction and the exact prior account balance from `_undoTx.prevSaldo`. `saveEditTx()` reverses the original impact then applies the new one.
 
 Currency conversion in `_applyCtaImpact`:
 - `amt = tc.wal === 'USD' ? (walTx === 'USD' ? monto : monto / S.trm) : toCOP(monto, walTx)`
@@ -225,23 +259,38 @@ Two wallets: `COP` and `USD`. All totals are converted to COP for display using 
 
 ### Desktop / Responsive Layout
 
-The app uses media queries at two breakpoints:
-- **≥ 768px:** App expands to 960px, dashboard grid becomes 3-column, Cuentas and Ajustes go 2-column, edit modal centers on screen
+The app uses CSS media query breakpoints:
+- **≥ 768px:** App expands to 960px, sidebar nav replaces bottom tabs, Cuentas and Ajustes go 2-column, edit modal centers on screen
 - **≥ 1100px:** App expands to 1140px, Inicio dashboard becomes 4-column
+- **≥ 1280px:** App expands to 1280px, sidebar nav widens to 220px
+- **≥ 1440px:** App expands to 1440px; Inicio becomes a 12-column grid; Movimientos splits into form (380px fixed) | list; Presupuesto goes 2-column; Inversiones goes 3-column
+- **≥ 1920px:** App expands to 1600px
 
-No changes to the viewport meta tag — CSS alone handles responsive behavior.
+Viewport meta: `width=device-width, initial-scale=1, viewport-fit=cover` (no `maximum-scale` or `user-scalable` restrictions).
 
 ### Rendering
 
-No virtual DOM. Each tab has a `render*()` function that directly sets `innerHTML` or `textContent`. `renderAll()` refreshes everything. Navigation calls `go(page, btn)`.
+No virtual DOM. Each tab has a `render*()` function that directly sets `innerHTML` or `textContent`.
+
+**`renderPage(p)`** renders only the components for the given page (replaces calling `renderAll()` on navigation):
+- `'inicio'` → `renderDash()`
+- `'cuentas'` → `renderCuentas()` + `populateCtaSel()`
+- `'movim'` → `renderHist()` + `renderCG()` + `populateCtaSel()`
+- `'presup'` → `renderBCfg()` + `renderBProg()`
+- `'invers'` → `renderInv()`
+- `'ajustes'` → `renderBioRow()` + `renderWalletList()` + `renderCatEdit()`
+
+**`go(p, btn)`** activates the page, calls `renderPage(p)`, and calls `updTRM()`. Do **not** add `renderAll()` inside `go()`.
+
+**`renderAll()`** calls every render function and is used only on: initial `load()`, `syncDown()`, `autoTRM()` success, and global privacy changes.
 
 **`renderInv()` structure:** Renders three independent sections — manual investments, Polymarket, and Crypto Wallet. The manual investments section uses a normal early-`return` guard (`if(!el)return`). The Polymarket and Crypto sections follow it sequentially using `if/else` blocks without early returns, so both always render regardless of whether wallets are configured. Never add an early `return` between these sections.
 
 **`renderDash()` is called by** `renderAll()`, `fetchPolymarket()`, and `fetchCryptoWallet()` — all three sources affect `calcPat()` totals, so all three must trigger a dashboard refresh.
 
-### Transaction Search
+### Transaction Search & Filters
 
-`renderHist()` reads `#txSearch` value and filters by description or category name (case-insensitive). `chM()` (month navigation) clears the search field automatically on month change.
+Filter state lives in `S._uiFilters = { fw, fc, ft, txSearch }` — not in the DOM. `renderHist()` reads exclusively from `S._uiFilters`. HTML inputs write to `S._uiFilters` on `onchange`/`oninput` then call `renderHist()`. `chM()` clears `S._uiFilters.txSearch` and resets the `#txSearch` DOM value on month change.
 
 ### PWA / iOS
 
@@ -251,6 +300,22 @@ No virtual DOM. Each tab has a `render*()` function that directly sets `innerHTM
 - `theme-color` meta tags for light/dark mode.
 - `apple-mobile-web-app-status-bar-style: black-translucent` — `.topbar` uses `padding-top: calc(14px + env(safe-area-inset-top))`.
 - Inline manifest sets `display: standalone`.
+- Service worker (`sw.js`) enables offline loading after first visit.
+
+### iOS PWA Auth Flow (OTP)
+
+Login uses **6-digit OTP codes** (not magic links) to avoid the PKCE verifier mismatch that occurs when iOS opens links in Safari instead of the PWA.
+
+**Flow:**
+1. User enters email → `sendMagicLink()` calls `supa.auth.signInWithOtp()` with `shouldCreateUser: true`
+2. Email input and send button are hidden; `#login-sent` card appears with a 6-digit input (`#login-otp`)
+3. User enters the code → `verifyOtp()` calls `supa.auth.verifyOtp({email, token, type:'email'})`
+4. On success, `onAuthStateChange` fires automatically and calls `hideLogin()`
+5. `backToEmail()` lets the user go back if needed
+
+**Supabase dashboard requirement:** the "Magic Link" email template must include `{{ .Token }}` in the body so Supabase sends the code alongside the link.
+
+The `visibilitychange` listener is kept as a fallback session recovery mechanism (useful for expired sessions).
 
 ### Categories
 
@@ -274,51 +339,45 @@ finanzas_data (
 ```
 Row Level Security is enabled — users can only read/write their own row.
 
-**Auth:** Magic link (email OTP) using **PKCE flow** (`flowType: 'pkce'`). `signInWithOtp()` sends a link; clicking it redirects to the app URL with a `?code=` param, which the Supabase SDK exchanges automatically. `onAuthStateChange` fires, setting `supaUser` and calling `syncDown()`.
-
-**iOS PWA auth flow:** On iPhone, magic links open in Safari (not the PWA). Two mechanisms recover the session when the user returns to the PWA:
-1. `visibilitychange` listener — fires `supa.auth.getSession()` every time the PWA becomes visible while `supaUser` is null
-2. **"Ya hice clic en el link →"** button in the login overlay — calls `recheckSession()` for an immediate manual recheck
-
 **Sync flow:**
-- `persist()` → saves to `localStorage` immediately, then calls `debouncedSyncUp()` (1.5 s debounce) → `syncUp()` upserts full state to Supabase
+- `persist()` → saves to `localStorage` immediately via `buildPersistPayload()`, then calls `debouncedSyncUp()` (1.5s debounce) → `syncUp()` upserts full state to Supabase
 - On app open → `supa.auth.getSession()` checks for existing session → calls `syncDown()` which fetches the cloud row, overwrites `S`, writes localStorage, then calls `renderAll()`
-- Offline: `syncUp()` fails silently; `localStorage` keeps the data; syncs when connectivity returns
-- Sync status dot (`#sync-dot`) in topbar managed by `setSyncDot(state)`: `'ok'` → green, `'busy'` → amber, anything else → muted (no session or error)
+- Offline: `syncUp()` fails and retries automatically at 10s → 30s → 60s backoff (counter resets on success)
+- Sync status dot (`#sync-dot`) in topbar managed by `setSyncDot(state)`: `'ok'` → green, `'busy'` → amber, `'err'` → red ("Error de sync — reintentando"), anything else → muted (no session)
 
-**Fields synced (both `syncUp` and `syncDown` must include all of these):**
+**Fields synced** (managed via `PERSIST_KEYS`):
 `txs, ctas, invs, cats, bud, trm, trmMan, trmDate, privGlobal, priv, polyWallet, wallets`
 
 **Key functions:**
-- `syncUp()` — async, upserts full state to Supabase
-- `syncDown()` — async, fetches cloud state, overwrites `S` fields + localStorage, calls `renderAll()`, then calls `fetchPolymarket()` and `fetchCryptoWallet()` if configured
+- `syncUp()` — async, upserts via `buildPersistPayload()`; retries with exponential backoff on failure
+- `syncDown()` — async, fetches cloud state, stringifies any legacy numeric IDs, overwrites `S` + localStorage, calls `renderAll()`, then fetches Polymarket/crypto if configured
 - `debouncedSyncUp()` — 1500ms debounced wrapper called by `persist()`
-- `sendMagicLink()` — sends OTP email via `supa.auth.signInWithOtp()`
-- `recheckSession()` — manually triggers `getSession()` recheck; called by the "Ya hice clic" button
+- `sendMagicLink()` — sends 6-digit OTP via `supa.auth.signInWithOtp()`
+- `verifyOtp()` — verifies 6-digit code via `supa.auth.verifyOtp()`
 - `doSignOut()` — signs out and shows login overlay; does **not** clear the biometric credential
 - `showLogin()` / `hideLogin()` — controls `#login-overlay` visibility; `showLogin()` also shows/hides `#bio-login-sec` based on `hasBioCred()`
 
-**Login overlay** (`#login-overlay`): full-screen overlay shown when `supaUser` is null. Contains a biometric section (`#bio-login-sec`) shown only when a credential is registered on the device.
+**Login overlay** (`#login-overlay`): full-screen overlay shown when `supaUser` is null. Shows email input + send button initially; after sending shows `#login-sent` card with OTP input, Verificar button, and "← Volver" link. Contains a biometric section (`#bio-login-sec`) shown only when a credential is registered on the device.
 
-**`resetApp()`:** resets `txs`, `invs`, `ctas`, `bud`, `cats` to empty/defaults and writes localStorage. Does **not** reset `polyWallet`, `wallets`, or the biometric credential — those survive a reset. Deletes the Supabase row to prevent cloud restore on next sync. Auth session stays active.
+**`resetApp()`:** resets `txs`, `invs`, `ctas`, `bud`, `cats`, `privGlobal`, `priv` to empty/defaults and writes localStorage. Does **not** reset `polyWallet`, `wallets`, or the biometric credential — those survive a reset. Deletes the Supabase row to prevent cloud restore on next sync. Auth session stays active.
+
+**Operational note:** Supabase free tier pauses after 7 days of inactivity. Data is not lost — reactivate from the Supabase dashboard.
 
 ### Biometric Auth (Face ID / Touch ID)
 
-Device-local authentication via the **WebAuthn API** (platform authenticator). The biometric credential is registered once per device after the first magic-link sign-in.
+Device-local authentication via the **WebAuthn API** (platform authenticator). The biometric credential is registered once per device after the first sign-in.
 
 **Key functions:**
 - `hasBioCred()` — returns `true` if `localStorage['mf_bio']` exists
 - `bioAvailable()` — async, returns `true` if `PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()` resolves true
 - `registerBiometric()` — calls `navigator.credentials.create()` with `authenticatorAttachment: 'platform'`; stores `{ id: Uint8Array, email }` in `localStorage['mf_bio']`
-- `authWithBiometric()` — calls `navigator.credentials.get()` to verify biometric; on success tries `getSession()` then `refreshSession()` to restore the Supabase session
+- `authWithBiometric()` — verifies biometric via `navigator.credentials.get()`; checks that `session.user.email === bio.email` before granting access (prevents a different user's session from unlocking); tries `getSession()` then `refreshSession()` to restore the Supabase session
 - `revokeBiometric()` — removes `localStorage['mf_bio']` and re-renders the settings row
 - `renderBioRow()` — renders the Activate/Revocar row in Ajustes → CUENTA (`#bio-row`); disables the button if `bioAvailable()` returns false
 
 **Storage:** `localStorage['mf_bio']` = `{ id: number[], email: string }` — the credential ID (public, non-sensitive) and email. No biometric data ever leaves the device's Secure Enclave.
 
 **Credential scope:** credentials are bound to `window.location.hostname` (the `rp.id`). A credential registered on Vercel won't work on GitHub Pages and vice versa — this is correct WebAuthn behaviour.
-
-**Operational note:** Supabase free tier pauses after 7 days of inactivity. Data is not lost — reactivate from the Supabase dashboard.
 
 ### Polymarket Integration
 
@@ -347,7 +406,7 @@ Displays real-time crypto token balances in **Inversiones → CRYPTO WALLET**.
 
 | Type | Balance source | Price source | API key |
 |---|---|---|---|
-| EVM (eth/polygon/bsc/base/avalanche) | Moralis EVM API | Moralis | `MORALIS_KEY` in Vercel |
+| EVM (eth/polygon/bsc/base/avalanche) | Moralis EVM API | Moralis → Binance fallback | `MORALIS_KEY` in Vercel |
 | Bitcoin | mempool.space | Binance public | None |
 | Solana + SPL tokens | Moralis Solana gateway | Moralis / Binance | `MORALIS_KEY` in Vercel |
 
@@ -367,4 +426,4 @@ Displays real-time crypto token balances in **Inversiones → CRYPTO WALLET**.
 
 ## Excel Export
 
-Uses the `xlsx` library loaded from CDN (`cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js`). Exports 5 sheets: Cuentas, Transacciones (includes "Cuenta" column), Presupuesto, Inversiones, Resumen.
+The `xlsx` library (~1MB) is **lazy-loaded** on first use — it is not included in the initial page load. `expXL()` is `async` and dynamically injects the CDN script tag on first click, then proceeds with the export. Exports 5 sheets: Cuentas, Transacciones (includes "Cuenta" column), Presupuesto, Inversiones, Resumen.
