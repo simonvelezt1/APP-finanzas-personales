@@ -294,22 +294,22 @@ Filter state lives in `S._uiFilters = { fw, fc, ft, txSearch }` — not in the D
 
 ### PWA / iOS
 
-- App icon: `genIcon()` first tries to load `./logo.png`; if it fails (404 or network error), falls back to a canvas-generated 180×180 navy rounded square with white "MF". Result injected into `<link id="ati">` and `#appLogo`.
+- App icon: `<img id="appLogo" src="./logo.png">` loads immediately on parse. `genIcon()` also runs on `DOMContentLoaded` — if the image loads successfully it updates `<link id="ati">` and `#loginLogo`; if it fails (404 or network error) it falls back to a canvas-generated 180×180 navy rounded square with white "MF" and injects that into both elements.
 - `logo.png` is committed to the repo (whitelisted in `.gitignore` via `!logo.png`). It is a **180×180 px PNG** cropped from the original `Logo App mis propias finanzas.png` (1536×1024) — do not re-export the original directly, always crop to square first. Source file remains PC-only per gitignore rules.
 - Logo box CSS: `.logo-box { background: #F5F4F0 }` — matches the logo's own cream background. `#appLogo { width:100%; height:100%; object-fit:cover }` fills the box edge-to-edge.
 - `theme-color` meta tags for light/dark mode.
 - `apple-mobile-web-app-status-bar-style: black-translucent` — `.topbar` uses `padding-top: calc(14px + env(safe-area-inset-top))`.
-- Inline manifest sets `display: standalone`.
+- Inline manifest includes `"icons":[{"src":"./logo.png","sizes":"192x192"},{"src":"./logo.png","sizes":"180x180"}]` so the OS uses `logo.png` when the PWA is installed (app library, dock, Launchpad). Without this field the OS generates a default icon.
 - Service worker (`sw.js`) enables offline loading after first visit.
 
 ### iOS PWA Auth Flow (OTP)
 
-Login uses **6-digit OTP codes** (not magic links) to avoid the PKCE verifier mismatch that occurs when iOS opens links in Safari instead of the PWA.
+Login uses **OTP codes** (not magic links) to avoid the PKCE verifier mismatch that occurs when iOS opens links in Safari instead of the PWA. Supabase sends 6–8 digit codes; the input accepts `maxlength="8"` and validates with `/^\d{6,8}$/`.
 
 **Flow:**
 1. User enters email → `sendMagicLink()` calls `supa.auth.signInWithOtp()` with `shouldCreateUser: true`
-2. Email input and send button are hidden; `#login-sent` card appears with a 6-digit input (`#login-otp`)
-3. User enters the code → `verifyOtp()` calls `supa.auth.verifyOtp({email, token, type:'email'})`
+2. Email input and send button are hidden; `#login-sent` card appears with an OTP input (`#login-otp`, `maxlength="8"`)
+3. User enters the code → `verifyOtp()` validates `/^\d{6,8}$/` then calls `supa.auth.verifyOtp({email, token, type:'email'})`
 4. On success, `onAuthStateChange` fires automatically and calls `hideLogin()`
 5. `backToEmail()` lets the user go back if needed
 
@@ -352,9 +352,9 @@ Row Level Security is enabled — users can only read/write their own row.
 - `syncUp()` — async, upserts via `buildPersistPayload()`; retries with exponential backoff on failure
 - `syncDown()` — async, fetches cloud state, stringifies any legacy numeric IDs, overwrites `S` + localStorage, calls `renderAll()`, then fetches Polymarket/crypto if configured
 - `debouncedSyncUp()` — 1500ms debounced wrapper called by `persist()`
-- `sendMagicLink()` — sends 6-digit OTP via `supa.auth.signInWithOtp()`
-- `verifyOtp()` — verifies 6-digit code via `supa.auth.verifyOtp()`
-- `doSignOut()` — signs out and shows login overlay; does **not** clear the biometric credential
+- `sendMagicLink()` — sends OTP via `supa.auth.signInWithOtp()`
+- `verifyOtp()` — validates `/^\d{6,8}$/` then calls `supa.auth.verifyOtp()`
+- `doSignOut()` — wraps `supa.auth.signOut()` in try/catch so local state (`supaUser=null`, login overlay) is always cleared even if the network call fails; does **not** clear the biometric credential
 - `showLogin()` / `hideLogin()` — controls `#login-overlay` visibility; `showLogin()` also shows/hides `#bio-login-sec` based on `hasBioCred()`
 
 **Login overlay** (`#login-overlay`): full-screen overlay shown when `supaUser` is null. Shows email input + send button initially; after sending shows `#login-sent` card with OTP input, Verificar button, and "← Volver" link. Contains a biometric section (`#bio-login-sec`) shown only when a credential is registered on the device.
