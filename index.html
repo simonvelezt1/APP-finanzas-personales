@@ -1012,7 +1012,7 @@ function backToEmail(){
 }
 
 async function doSignOut(){
-  await supa.auth.signOut();
+  try{await supa.auth.signOut();}catch(e){}
   supaUser=null;
   setSyncDot('off');
   setText('aj-email','—');
